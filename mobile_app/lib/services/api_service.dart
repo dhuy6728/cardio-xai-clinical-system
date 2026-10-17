@@ -15,6 +15,7 @@ class ApiService {
     required String fullName,
     String? phone,
     String? firebaseUid,
+    String role = 'patient',
     String? customHost,
   }) async {
     final host = customHost ?? baseUrl;
@@ -29,8 +30,10 @@ class ApiService {
         'full_name': fullName.trim(),
         'phone': phone?.trim(),
         'firebase_uid': firebaseUid,
+        'role': role,
       }),
     );
+
 
     final data = jsonDecode(utf8.decode(response.bodyBytes));
     if (response.statusCode == 200) {

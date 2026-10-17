@@ -310,11 +310,13 @@ if "Bệnh Nhân" in portal_mode:
         [
             "🏠 Trang Chủ (Kiến thức & Bài báo)",
             "🩺 Chẩn Đoán (Tự đánh giá nguy cơ)",
+            "📁 Kho Lưu Trữ Sức Khỏe",
             "📊 Bảng Chỉ Số Sức Khỏe Chuẩn",
             "🚑 Danh Bạ Cấp Cứu Khẩn Cấp",
         ],
         index=0,
     )
+
 
     # --------------------------------------------------------------------------
     # 1.1 TRANG CHỦ BỆNH NHÂN (HOME & ARTICLES)
@@ -454,20 +456,18 @@ if "Bệnh Nhân" in portal_mode:
         )
 
         with st.form("patient_assessment_form"):
-            st.markdown("##### 1. Thông tin cá nhân & Thể trạng")
-            p_col1, p_col2, p_col3 = st.columns(3)
+            st.markdown("##### 1. Thông số thể trạng của bạn")
+            p_col1, p_col2 = st.columns(2)
             with p_col1:
-                p_name = st.text_input("Họ và tên của bạn:", value="Nguyễn Văn A")
                 p_age = st.number_input("Tuổi của bạn:", min_value=18, max_value=90, value=48, step=1)
-            with p_col2:
                 p_gender_str = st.radio("Giới tính sinh học:", ["Nam", "Nữ"], horizontal=True)
                 p_gender = 2 if p_gender_str == "Nam" else 1
+            with p_col2:
                 p_height = st.number_input("Chiều cao (cm):", min_value=130, max_value=210, value=165, step=1)
-            with p_col3:
                 p_weight = st.number_input("Cân nặng (kg):", min_value=35.0, max_value=160.0, value=68.0, step=0.5)
-                # Live calculated BMI
                 p_bmi = round(p_weight / ((p_height / 100.0) ** 2), 2)
-                st.markdown(f"<div style='margin-top:28px;'><b>Chỉ số BMI dự tính:</b> <span style='font-size:1.15rem; color:#0284C7; font-weight:700;'>{p_bmi} kg/m²</span></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='margin-top:8px;'><b>Chỉ số BMI của bạn:</b> <span style='font-size:1.15rem; color:#0284C7; font-weight:700;'>{p_bmi} kg/m²</span></div>", unsafe_allow_html=True)
+
 
             st.markdown("---")
             st.markdown("##### 2. Huyết áp & Kết quả xét nghiệm máu (Nếu có)")
@@ -596,21 +596,58 @@ if "Bệnh Nhân" in portal_mode:
             st.markdown(
                 f"""
                 <div class="directive-box {r_bg}">
-                    <h4>Lời Khuyên Dành Riêng Cho Bạn ({p_name}):</h4>
+                    <h4>Lời Khuyên Dành Riêng Cho Bạn:</h4>
                     {r_guide}
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-            # Auto save record
-            save_assessment(p_name, patient_raw, p_prob, r_level, f"Tự đánh giá bệnh nhân: {r_level}")
-            st.success("✅ Đã tự động lưu phiếu đánh giá vào nhật ký theo dõi sức khỏe của bạn!")
+            # Auto save record without asking for name
+            save_assessment("Bệnh nhân", patient_raw, p_prob, r_level, f"Tự đánh giá: {r_level}")
+            st.success("✅ Đã tự động ghi nhận vào Kho lưu trữ sức khỏe của bạn theo ngày và tình trạng!")
 
     # --------------------------------------------------------------------------
-    # 1.3 BẢNG CHỈ SỐ SỨC KHỎE CHUẨN
+    # 1.3 KHO LƯU TRỮ SỨC KHỎE (PATIENT HEALTH HISTORY)
+    # --------------------------------------------------------------------------
+    elif patient_nav == "📁 Kho Lưu Trữ Sức Khỏe":
+        st.markdown(
+            """
+            <div class="page-header">
+                <h1 class="page-title">📁 Kho Lưu Trữ Sức Khỏe Của Bạn</h1>
+                <div class="page-subtitle">Nhật ký theo dõi các lần tự đánh giá nguy cơ tim mạch theo ngày tháng và tình trạng sức khỏe.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        records = get_all_records(limit=50)
+        if records:
+            df_rec = pd.DataFrame(records)
+            df_rec["Tình trạng"] = df_rec.apply(
+                lambda row: f"{row['risk_level']} ({row['risk_probability']:.1%})", axis=1
+            )
+            df_rec["Huyết áp"] = df_rec.apply(lambda row: f"{int(row['ap_hi'])}/{int(row['ap_lo'])} mmHg", axis=1)
+            df_rec["Ngày khám"] = df_rec["created_at"].apply(lambda d: str(d).replace("T", " ").split(".")[0])
+
+            cols_show = ["Ngày khám", "Tình trạng", "Huyết áp", "bmi", "cholesterol", "recommendation"]
+            st.dataframe(
+                df_rec[cols_show].rename(columns={
+                    "bmi": "BMI (kg/m²)",
+                    "cholesterol": "Mức Cholesterol",
+                    "recommendation": "Khuyến nghị sức khỏe",
+                }),
+                use_container_width=True,
+                hide_index=True,
+            )
+        else:
+            st.info("Chưa có lần đánh giá nào trong Kho lưu trữ. Hãy vào mục '🩺 Chẩn Đoán' để thực hiện đánh giá đầu tiên.")
+
+    # --------------------------------------------------------------------------
+    # 1.4 BẢNG CHỈ SỐ SỨC KHỎE CHUẨN
     # --------------------------------------------------------------------------
     elif patient_nav == "📊 Bảng Chỉ Số Sức Khỏe Chuẩn":
+
         st.markdown(
             """
             <div class="page-header">
@@ -764,7 +801,7 @@ else:
         active = 1 if st.checkbox("Vận động", value=bool(init_active)) else 0
 
     st.sidebar.markdown("<br>", unsafe_allow_html=True)
-    save_db_btn = st.sidebar.button("💾 Lưu ca khám vào CSDL SQL", use_container_width=True)
+    save_db_btn = st.sidebar.button("💾 Lưu ca khám vào Kho lưu trữ", use_container_width=True)
 
     # Process inference
     patient_raw = {
@@ -811,7 +848,8 @@ else:
     # Save record trigger
     if save_db_btn:
         rec_id = save_assessment(patient_name, patient_raw, pred_proba, risk_level, recommendation_text)
-        st.sidebar.success(f"Đã lưu hồ sơ thành công! (Mã số #{rec_id})")
+        st.sidebar.success(f"Đã lưu hồ sơ vào Kho lưu trữ thành công! (Mã hồ sơ #{rec_id})")
+
 
     # Header for Clinical Portal
     st.markdown(
@@ -895,9 +933,10 @@ else:
         "🔍 1. Giải thích Cá thể hóa (SHAP)",
         "📊 2. Luật Điều kiện (LIME)",
         "🌐 3. Quy luật Quần thể",
-        "🗄️ 4. Hồ sơ Bệnh án SQL",
+        "🗄️ 4. Kho Lưu Trữ Bệnh Án",
         "📈 5. Kiểm định Mô hình",
     ])
+
 
     # ------------------------------------------
     # TAB 1: SHAP WATERFALL
@@ -1010,10 +1049,10 @@ else:
             st.image(str(FIGURES_DIR / "shap_dependence_bmi.png"), caption="Tương tác nguy cơ theo chỉ số BMI")
 
     # ------------------------------------------
-    # TAB 4: SQL DATABASE
+    # TAB 4: KHO LƯU TRỮ BỆNH ÁN
     # ------------------------------------------
     with tab_history:
-        st.markdown("**Hồ sơ bệnh nhân đã lưu trong hệ thống CSDL SQL:**")
+        st.markdown("**Danh sách hồ sơ bệnh nhân trong Kho lưu trữ (Quản lý theo tên):**")
         records = get_all_records(limit=50)
         if records:
             df_rec = pd.DataFrame(records)
@@ -1035,7 +1074,8 @@ else:
                 hide_index=True,
             )
         else:
-            st.info("Chưa có hồ sơ bệnh án nào được ghi nhận. Nhập thông tin và bấm 'Lưu ca khám vào CSDL SQL' ở thanh bên trái.")
+            st.info("Chưa có hồ sơ bệnh án nào trong Kho lưu trữ. Nhập thông tin và bấm 'Lưu ca khám vào Kho lưu trữ' ở thanh bên trái.")
+
 
     # ------------------------------------------
     # TAB 5: MODEL BENCHMARK

@@ -123,7 +123,9 @@ def auth_register(req: UserRegisterRequest):
             full_name=req.full_name,
             firebase_uid=req.firebase_uid,
             phone=req.phone,
+            role=req.role,
         )
+
         return AuthResponse(
             status="success",
             message="Đăng ký tài khoản thành công!",

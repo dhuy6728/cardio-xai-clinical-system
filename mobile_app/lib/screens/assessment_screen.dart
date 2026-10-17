@@ -4,7 +4,13 @@ import '../services/api_service.dart';
 
 class AssessmentScreen extends StatefulWidget {
   final String apiHost;
-  const AssessmentScreen({Key? key, required this.apiHost}) : super(key: key);
+  final Map<String, dynamic>? user;
+
+  const AssessmentScreen({
+    super.key,
+    required this.apiHost,
+    this.user,
+  });
 
   @override
   State<AssessmentScreen> createState() => _AssessmentScreenState();
@@ -25,17 +31,22 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   bool _smoke = false;
   bool _alco = false;
   bool _active = true;
-  String _name = "Bệnh nhân mẫu";
+  String _doctorPatientName = "Trần Văn Cao";
 
   bool _isLoading = false;
   FullAnalysisResult? _analysisResult;
+
+  bool get _isDoctor => (widget.user?['role'] ?? 'patient') == 'doctor';
+  String get _effectiveName => _isDoctor
+      ? _doctorPatientName.trim()
+      : (widget.user?['full_name'] ?? 'Bệnh nhân');
 
   double get _bmi => _weight / ((_height / 100) * (_height / 100));
 
   void _loadPreset(String presetType) {
     setState(() {
       if (presetType == 'high') {
-        _name = "Trần Văn Cao";
+        _doctorPatientName = "Trần Văn Cao";
         _age = 51.0;
         _gender = 2;
         _height = 168.0;
@@ -48,7 +59,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
         _alco = false;
         _active = false;
       } else if (presetType == 'healthy') {
-        _name = "Lê Thị Thảo";
+        _doctorPatientName = "Lê Thị Thảo";
         _age = 32.0;
         _gender = 1;
         _height = 165.0;
@@ -82,7 +93,8 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
         smoke: _smoke ? 1 : 0,
         alco: _alco ? 1 : 0,
         active: _active ? 1 : 0,
-        patientName: _name,
+        patientName: _effectiveName,
+        userId: widget.user?['id'],
       );
 
       final result = await ApiService.analyzePatient(input, customHost: widget.apiHost);
@@ -90,41 +102,65 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
         _analysisResult = result;
         _isLoading = false;
       });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isDoctor
+                ? 'Đã phân tích và lưu vào Kho lưu trữ bệnh án!'
+                : 'Đã đánh giá và lưu vào Kho lưu trữ sức khỏe của bạn!'),
+            backgroundColor: const Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Lỗi kết nối API: $e'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi kết nối máy chủ: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = _isDoctor ? const Color(0xFF0F4C81) : const Color(0xFF0284C7);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
+        backgroundColor: themeColor,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('CardioXAI Pro', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-            Text('Chẩn đoán Nguy cơ & XAI Cá thể hóa', style: TextStyle(fontSize: 11, color: Colors.white70)),
+          children: [
+            Text(
+              _isDoctor ? 'Hội Chẩn Lâm Sàng (Bác Sĩ)' : 'Tự Đánh Giá Nguy Cơ Tim Mạch',
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+            ),
+            Text(
+              _isDoctor ? 'Hỗ trợ quyết định y khoa minh bạch XAI' : 'Theo dõi chỉ số và phòng ngừa biến cố',
+              style: const TextStyle(fontSize: 11, color: Colors.white70),
+            ),
           ],
         ),
         actions: [
-          PopupMenuButton<String>(
-            tooltip: 'Chọn mẫu ca bệnh nhanh',
-            icon: const Icon(Icons.flash_on, color: Colors.amberAccent),
-            onSelected: _loadPreset,
-            itemBuilder: (ctx) => [
-              const PopupMenuItem(value: 'high', child: Text('⚠️ Ca Nguy cơ Cao (51t, HA 145/95)')),
-              const PopupMenuItem(value: 'healthy', child: Text('✓ Ca Khỏe mạnh (32t, HA 118/76)')),
-            ],
-          ),
+          if (_isDoctor)
+            PopupMenuButton<String>(
+              tooltip: 'Chọn ca bệnh mẫu',
+              icon: const Icon(Icons.flash_on, color: Colors.amberAccent),
+              onSelected: _loadPreset,
+              itemBuilder: (ctx) => const [
+                PopupMenuItem(value: 'high', child: Text('⚠️ Ca Nguy cơ Cao (51t, HA 145/95)')),
+                PopupMenuItem(value: 'healthy', child: Text('✓ Ca Khỏe mạnh (32t, HA 118/76)')),
+              ],
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -132,8 +168,59 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Patient Input Card
+            // Patient Identification / Profile banner
+            if (!_isDoctor)
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(14),
+
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0284C7).withOpacity(0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.person, color: Color(0xFF0284C7), size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.user?['full_name'] ?? 'Bệnh nhân',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Kết quả sẽ tự động lưu vào Kho lưu trữ cá nhân',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Form Input Card
             Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: const BorderSide(color: Color(0xFFE2E8F0)),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(18.0),
                 child: Form(
@@ -144,11 +231,15 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            '👤 Thông tin Lâm sàng',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F4C81)),
+                          Expanded(
+                            child: Text(
+                              _isDoctor ? '👤 Thông tin Ca Bệnh' : '📊 Thể trạng & Sức khỏe',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: themeColor),
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
+
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: _bmi >= 25 ? Colors.amber.shade100 : Colors.green.shade100,
@@ -166,19 +257,24 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      TextFormField(
-                        key: ValueKey(_name),
-                        initialValue: _name,
-                        decoration: InputDecoration(
-                          labelText: 'Họ và tên bệnh nhân',
-                          prefixIcon: const Icon(Icons.person, size: 20),
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+
+                      // Chỉ hiện ô nhập tên khi là BÁC SĨ (Bệnh nhân không cần hỏi tên)
+                      if (_isDoctor) ...[
+                        TextFormField(
+                          key: ValueKey(_doctorPatientName),
+                          initialValue: _doctorPatientName,
+                          decoration: InputDecoration(
+                            labelText: 'Họ và tên bệnh nhân khám',
+                            prefixIcon: const Icon(Icons.person, size: 20),
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                          ),
+                          onChanged: (val) => _doctorPatientName = val,
                         ),
-                        onChanged: (val) => _name = val,
-                      ),
-                      const SizedBox(height: 14),
+                        const SizedBox(height: 14),
+                      ],
+
                       Row(
                         children: [
                           Expanded(
@@ -190,7 +286,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                               min: 30,
                               max: 65,
                               value: _age,
-                              activeColor: const Color(0xFF0F4C81),
+                              activeColor: themeColor,
                               divisions: 35,
                               label: '${_age.toInt()} tuổi',
                               onChanged: (v) => setState(() => _age = v),
@@ -201,19 +297,19 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                       Row(
                         children: [
                           const Text('Giới tính: ', style: TextStyle(fontWeight: FontWeight.w600)),
-                          Radio<int>(value: 2, groupValue: _gender, activeColor: const Color(0xFF0F4C81), onChanged: (v) => setState(() => _gender = v!)),
+                          Radio<int>(value: 2, groupValue: _gender, activeColor: themeColor, onChanged: (v) => setState(() => _gender = v!)),
                           const Text('Nam'),
-                          Radio<int>(value: 1, groupValue: _gender, activeColor: const Color(0xFF0F4C81), onChanged: (v) => setState(() => _gender = v!)),
+                          Radio<int>(value: 1, groupValue: _gender, activeColor: themeColor, onChanged: (v) => setState(() => _gender = v!)),
                           const Text('Nữ'),
                         ],
                       ),
                       const SizedBox(height: 8),
+
                       Row(
                         children: [
                           Expanded(
                             child: TextFormField(
-                              key: ValueKey(_height),
-                              initialValue: '$_height',
+                              initialValue: _height.toStringAsFixed(0),
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 labelText: 'Chiều cao (cm)',
@@ -221,14 +317,13 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                                 fillColor: const Color(0xFFF8FAFC),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                               ),
-                              onChanged: (v) => setState(() => _height = double.tryParse(v) ?? _height),
+                              onChanged: (v) => _height = double.tryParse(v) ?? _height,
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: TextFormField(
-                              key: ValueKey(_weight),
-                              initialValue: '$_weight',
+                              initialValue: _weight.toStringAsFixed(1),
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 labelText: 'Cân nặng (kg)',
@@ -241,43 +336,52 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                           ),
                         ],
                       ),
-                      const Divider(height: 28),
-                      const Text('🩺 Huyết áp & Sinh hóa', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F4C81))),
+
+                      const SizedBox(height: 18),
+                      const Divider(),
                       const SizedBox(height: 10),
+
+                      Text(
+                        '🩺 Huyết áp & Chỉ số Sinh hóa',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: themeColor),
+                      ),
+                      const SizedBox(height: 12),
+
                       Row(
                         children: [
                           Expanded(
                             child: TextFormField(
-                              key: ValueKey(_apHi),
-                              initialValue: '$_apHi',
+                              initialValue: _apHi.toString(),
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                labelText: 'HA Tâm thu',
+                                labelText: 'HA Tâm thu (mmHg)',
+                                helperText: 'Chỉ số tối đa',
                                 filled: true,
                                 fillColor: const Color(0xFFF8FAFC),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                               ),
-                              onChanged: (v) => setState(() => _apHi = int.tryParse(v) ?? _apHi),
+                              onChanged: (v) => _apHi = int.tryParse(v) ?? _apHi,
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: TextFormField(
-                              key: ValueKey(_apLo),
-                              initialValue: '$_apLo',
+                              initialValue: _apLo.toString(),
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                labelText: 'HA Tâm trương',
+                                labelText: 'HA Tâm trương (mmHg)',
+                                helperText: 'Chỉ số tối thiểu',
                                 filled: true,
                                 fillColor: const Color(0xFFF8FAFC),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                               ),
-                              onChanged: (v) => setState(() => _apLo = int.tryParse(v) ?? _apLo),
+                              onChanged: (v) => _apLo = int.tryParse(v) ?? _apLo,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
+
                       DropdownButtonFormField<int>(
                         value: _cholesterol,
                         decoration: InputDecoration(
@@ -287,51 +391,73 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                         ),
                         items: const [
-                          DropdownMenuItem(value: 1, child: Text('Mức 1: Bình thường (< 5.2)')),
-                          DropdownMenuItem(value: 2, child: Text('Mức 2: Hơi cao (5.2 - 6.2)')),
-                          DropdownMenuItem(value: 3, child: Text('Mức 3: Rất cao (> 6.2)')),
+                          DropdownMenuItem(value: 1, child: Text('Mức 1: Bình thường (< 5.2 mmol/L)')),
+                          DropdownMenuItem(value: 2, child: Text('Mức 2: Hơi cao (5.2 - 6.2 mmol/L)')),
+                          DropdownMenuItem(value: 3, child: Text('Mức 3: Rất cao (> 6.2 mmol/L)')),
                         ],
                         onChanged: (v) => setState(() => _cholesterol = v!),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 14),
+
+                      DropdownButtonFormField<int>(
+                        value: _gluc,
+                        decoration: InputDecoration(
+                          labelText: 'Đường huyết đói (Glucose)',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 1, child: Text('Mức 1: Bình thường (< 5.6 mmol/L)')),
+                          DropdownMenuItem(value: 2, child: Text('Mức 2: Tiền ĐTĐ (5.6 - 6.9 mmol/L)')),
+                          DropdownMenuItem(value: 3, child: Text('Mức 3: Đái tháo đường (≥ 7.0 mmol/L)')),
+                        ],
+                        onChanged: (v) => setState(() => _gluc = v!),
+                      ),
+                      const SizedBox(height: 14),
+
                       Row(
                         children: [
                           Expanded(
                             child: CheckboxListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
                               title: const Text('Hút thuốc', style: TextStyle(fontSize: 13)),
                               value: _smoke,
-                              activeColor: const Color(0xFF0F4C81),
+                              activeColor: themeColor,
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
                               onChanged: (v) => setState(() => _smoke = v!),
                             ),
                           ),
                           Expanded(
                             child: CheckboxListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
                               title: const Text('Vận động', style: TextStyle(fontSize: 13)),
                               value: _active,
-                              activeColor: const Color(0xFF0F4C81),
+                              activeColor: themeColor,
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
                               onChanged: (v) => setState(() => _active = v!),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 18),
+
                       SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton.icon(
                           icon: _isLoading
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: white, strokeWidth: 2))
-                              : const Icon(Icons.query_stats, color: Colors.white),
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.analytics_outlined),
                           label: Text(
-                            _isLoading ? 'Đang phân tích XAI...' : 'Phân tích Nguy cơ & XAI',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                            _isDoctor
+                                ? 'Phân tích Lâm sàng & Lưu Kho lưu trữ'
+                                : 'Đánh Giá Nguy Cơ & Lưu Kho Lưu Trữ',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0F4C81),
+                            backgroundColor: themeColor,
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: _isLoading ? null : _submitAnalysis,
@@ -343,141 +469,98 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
               ),
             ),
 
-            const SizedBox(height: 16),
-
-            // Analysis Result Presentation
+            // Results Section
             if (_analysisResult != null) ...[
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: _analysisResult!.prediction.riskLevel == 'HIGH'
-                        ? [const Color(0xFFFFF5F5), const Color(0xFFFED7D7)]
-                        : (_analysisResult!.prediction.riskLevel == 'MODERATE'
-                            ? [const Color(0xFFFFFDF0), const Color(0xFFFEFCBF)]
-                            : [const Color(0xFFF0FFF4), const Color(0xFFC6F6D5)]),
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _analysisResult!.prediction.riskLevel == 'HIGH'
-                        ? const Color(0xFFE53E3E)
-                        : (_analysisResult!.prediction.riskLevel == 'MODERATE' ? const Color(0xFFD69E2E) : const Color(0xFF38A169)),
-                    width: 1.5,
-                  ),
-                ),
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Xác suất Bệnh Tim mạch:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF4A5568))),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _analysisResult!.prediction.riskLevel == 'HIGH' ? Colors.red : Colors.green,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            _analysisResult!.prediction.riskLevel,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _analysisResult!.prediction.riskPercentage,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: _analysisResult!.prediction.riskLevel == 'HIGH' ? const Color(0xFF9B2C2C) : const Color(0xFF22543D),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _analysisResult!.prediction.recommendation,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF2D3748)),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // SHAP Waterfall Contributions Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(18.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.insights, color: Color(0xFF0F4C81), size: 20),
-                          SizedBox(width: 8),
-                          Text('Bóc tách SHAP (Đóng góp Biên)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F4C81))),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Thanh màu thể hiện mức độ tác động của từng chỉ số lên quyết định mô hình:',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF718096)),
-                      ),
-                      const SizedBox(height: 14),
-                      ..._analysisResult!.shapContributions.map((c) {
-                        final isPositive = c.shapValue > 0;
-                        final double barWidthRatio = (c.shapValue.abs() / 0.5).clamp(0.05, 1.0);
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '${c.displayName}: ${c.actualValue}',
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2D3748)),
-                                  ),
-                                  Text(
-                                    '${isPositive ? "+" : ""}${c.shapValue.toStringAsFixed(3)}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                      color: isPositive ? const Color(0xFFE53E3E) : const Color(0xFF3182CE),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: LinearProgressIndicator(
-                                  value: barWidthRatio,
-                                  minHeight: 6,
-                                  backgroundColor: const Color(0xFFEDF2F7),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    isPositive ? const Color(0xFFE53E3E) : const Color(0xFF3182CE),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ],
-                  ),
-                ),
-              ),
+              const SizedBox(height: 20),
+              _buildResultCard(_analysisResult!),
             ],
           ],
         ),
       ),
     );
   }
+
+  Widget _buildResultCard(FullAnalysisResult res) {
+    final pred = res.prediction;
+    final prob = pred.riskProbability;
+    final isHigh = prob >= 0.65;
+    final isMod = prob >= 0.35 && prob < 0.65;
+
+    final badgeColor = isHigh ? Colors.red : (isMod ? Colors.orange : Colors.green);
+    final badgeText = isHigh ? "NGUY CƠ CAO" : (isMod ? "NGUY CƠ TRUNG BÌNH" : "AN TOÀN");
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: badgeColor.shade300, width: 1.5),
+      ),
+      color: badgeColor.shade50.withOpacity(0.4),
+      child: Padding(
+        padding: const EdgeInsets.all(18.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Kết Quả Đánh Giá Nguy Cơ',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: badgeColor.shade100,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(color: badgeColor.shade900, fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                '${(prob * 100).toStringAsFixed(1)}%',
+                style: TextStyle(fontSize: 42, fontWeight: FontWeight.w900, color: badgeColor.shade800),
+              ),
+            ),
+            Center(
+              child: Text(
+                'Xác suất bệnh tim mạch (Mô hình AI)',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Text(
+                pred.recommendation,
+                style: const TextStyle(fontSize: 13, height: 1.5, color: Color(0xFF1E293B)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: const [
+                Icon(Icons.check_circle, size: 16, color: Color(0xFF16A34A)),
+                SizedBox(width: 6),
+                Text(
+                  'Đã tự động ghi nhận vào Kho lưu trữ của hệ thống.',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF166534), fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
-const Color white = Colors.white;

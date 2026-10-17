@@ -14,6 +14,7 @@ class PatientInput {
   final int alco;
   final int active;
   final String patientName;
+  final int? userId;
 
   PatientInput({
     required this.age,
@@ -28,6 +29,7 @@ class PatientInput {
     required this.alco,
     required this.active,
     this.patientName = "Bệnh nhân",
+    this.userId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -43,7 +45,9 @@ class PatientInput {
         'alco': alco,
         'active': active,
         'patient_name': patientName,
+        'user_id': userId,
       };
+
 }
 
 class FeatureContribution {

@@ -3,7 +3,13 @@ import '../services/api_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   final String apiHost;
-  const HistoryScreen({Key? key, required this.apiHost}) : super(key: key);
+  final Map<String, dynamic>? user;
+
+  const HistoryScreen({
+    super.key,
+    required this.apiHost,
+    this.user,
+  });
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -11,6 +17,8 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   late Future<List<Map<String, dynamic>>> _historyFuture;
+
+  bool get _isDoctor => (widget.user?['role'] ?? 'patient') == 'doctor';
 
   @override
   void initState() {
@@ -20,25 +28,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   void _loadHistory() {
     setState(() {
-      _historyFuture = ApiService.fetchHistory(customHost: widget.apiHost);
+      _historyFuture = ApiService.fetchHistory(
+        customHost: widget.apiHost,
+      );
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
+    final themeColor = _isDoctor ? const Color(0xFF0F4C81) : const Color(0xFF0284C7);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
+        backgroundColor: themeColor,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text('Hồ sơ Bệnh án SQL', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-            Text('Đồng bộ CSDL Quan hệ thời gian thực', style: TextStyle(fontSize: 11, color: Colors.white70)),
+          children: [
+            Text(
+              _isDoctor ? 'Kho Lưu Trữ Bệnh Án' : 'Kho Lưu Trữ Sức Khỏe',
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+            ),
+            Text(
+              _isDoctor ? 'Danh sách bệnh nhân & hồ sơ lâm sàng' : 'Lịch sử ngày khám & tình trạng nguy cơ',
+              style: const TextStyle(fontSize: 11, color: Colors.white70),
+            ),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Làm mới danh sách',
+            tooltip: 'Làm mới kho lưu trữ',
             onPressed: _loadHistory,
           ),
         ],
@@ -58,7 +79,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     const Icon(Icons.cloud_off, size: 54, color: Colors.redAccent),
                     const SizedBox(height: 14),
                     Text(
-                      'Không thể kết nối đến máy chủ SQL:\n${snapshot.error}',
+                      'Không thể kết nối đến Kho lưu trữ:\n${snapshot.error}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 13, color: Colors.black87),
                     ),
@@ -67,7 +88,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       icon: const Icon(Icons.refresh),
                       label: const Text('Thử kết nối lại'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0F4C81),
+                        backgroundColor: themeColor,
                         foregroundColor: Colors.white,
                       ),
                       onPressed: _loadHistory,
@@ -80,10 +101,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.folder_open, size: 54, color: Colors.grey),
-                  SizedBox(height: 12),
-                  Text('Chưa có hồ sơ bệnh án nào được ghi nhận.', style: TextStyle(color: Colors.grey)),
+                children: [
+                  const Icon(Icons.folder_open, size: 54, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  Text(
+                    _isDoctor
+                        ? 'Chưa có hồ sơ bệnh án nào trong Kho lưu trữ.'
+                        : 'Bạn chưa có lần chẩn đoán nào trong Kho lưu trữ.\nHãy vào mục "Chẩn đoán" để bắt đầu.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
                 ],
               ),
             );
@@ -99,69 +126,109 @@ class _HistoryScreenState extends State<HistoryScreen> {
               final isHigh = riskProb >= 0.65;
               final isMod = riskProb >= 0.35 && riskProb < 0.65;
 
-              final Color tagColor = isHigh ? const Color(0xFFE53E3E) : (isMod ? const Color(0xFFD69E2E) : const Color(0xFF38A169));
-              final Color bgColor = isHigh ? const Color(0xFFFFF5F5) : (isMod ? const Color(0xFFFFFDF0) : const Color(0xFFF0FFF4));
+              final badgeColor = isHigh ? Colors.red : (isMod ? Colors.orange : Colors.green);
+              final statusText = isHigh ? "NGUY CƠ CAO" : (isMod ? "NGUY CƠ TRUNG BÌNH" : "AN TOÀN");
+
+              // Formatted date string
+              final dateStr = r['created_at'] != null
+                  ? r['created_at'].toString().replaceFirst('T', ' ').split('.').first
+                  : 'Gần đây';
 
               return Card(
-                margin: const EdgeInsets.symmetric(vertical: 6),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                margin: const EdgeInsets.only(bottom: 12),
                 child: Padding(
-                  padding: const EdgeInsets.all(14.0),
-                  child: Row(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: tagColor.withOpacity(0.3), width: 1.5),
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${(riskProb * 100).toInt()}%',
-                            style: TextStyle(color: tagColor, fontWeight: FontWeight.w900, fontSize: 15),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      // Header: Bác sĩ hiển thị tên bệnh nhân, Bệnh nhân hiển thị ngày tháng
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Row(
                               children: [
-                                Text(
-                                  r['patient_name'] ?? 'Bệnh nhân',
-                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF1A202C)),
+                                Icon(
+                                  _isDoctor ? Icons.person : Icons.calendar_today,
+                                  size: 16,
+                                  color: themeColor,
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: tagColor.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
+                                const SizedBox(width: 8),
+                                Expanded(
                                   child: Text(
-                                    r['risk_level'] ?? '',
-                                    style: TextStyle(color: tagColor, fontWeight: FontWeight.bold, fontSize: 10),
+                                    _isDoctor
+                                        ? '${r['patient_name'] ?? 'Bệnh nhân'} (#${r['id']})'
+                                        : 'Ngày khám: $dateStr',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'HA: ${r['ap_hi']}/${r['ap_lo']} mmHg • BMI: ${r['bmi']} • Tuổi: ${r['age']}',
-                              style: const TextStyle(fontSize: 13, color: Color(0xFF4A5568), fontWeight: FontWeight.w500),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: badgeColor.shade100,
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Thời gian: ${r['created_at']}',
-                              style: const TextStyle(fontSize: 11, color: Color(0xFFA0AEC0)),
+                            child: Text(
+                              '$statusText (${(riskProb * 100).toStringAsFixed(1)}%)',
+                              style: TextStyle(
+                                color: badgeColor.shade900,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
+                          ),
+                        ],
+                      ),
+
+                      if (_isDoctor) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Thời gian khám: $dateStr',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        ),
+                      ],
+
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFF1F5F9)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildMiniMetric('Huyết áp', '${r['ap_hi']}/${r['ap_lo']} mmHg'),
+                            _buildMiniMetric('BMI', '${r['bmi'] ?? '--'} kg/m²'),
+                            _buildMiniMetric('Tuổi', '${r['age']} tuổi'),
+                            _buildMiniMetric('Cholesterol', 'Mức ${r['cholesterol']}'),
                           ],
                         ),
                       ),
+
+                      if (r['recommendation'] != null && r['recommendation'].toString().isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          '💡 ${r['recommendation']}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.35),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -170,6 +237,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildMiniMetric(String label, String value) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
+      ],
     );
   }
 }

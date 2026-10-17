@@ -16,6 +16,8 @@ class UserRegisterRequest(BaseModel):
     full_name: str = Field(..., min_length=2, example="Nguyễn Văn A", description="Họ và tên")
     phone: Optional[str] = Field(None, example="0901234567", description="Số điện thoại")
     firebase_uid: Optional[str] = Field(None, description="Firebase User UID nếu liên kết")
+    role: str = Field("patient", example="patient", description="Vai trò: 'patient' (bệnh nhân) hoặc 'doctor' (bác sĩ)")
+
 
 
 class UserLoginRequest(BaseModel):
