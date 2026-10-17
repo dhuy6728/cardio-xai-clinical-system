@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/auth_screen.dart';
+import 'screens/home_screen.dart';
 import 'screens/assessment_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
@@ -86,6 +87,11 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     final screens = [
+      HomeScreen(
+        user: widget.user,
+        apiHost: widget.apiHost,
+        onNavigateToAssessment: () => setState(() => _currentIndex = 1),
+      ),
       AssessmentScreen(apiHost: widget.apiHost),
       HistoryScreen(apiHost: widget.apiHost),
       ProfileScreen(
@@ -104,9 +110,14 @@ class _MainNavigationState extends State<MainNavigation> {
         onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.favorite_border),
-            selectedIcon: Icon(Icons.favorite, color: Color(0xFF0F4C81)),
-            label: 'Khám & XAI',
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: Color(0xFF0F4C81)),
+            label: 'Trang chủ',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.monitor_heart_outlined),
+            selectedIcon: Icon(Icons.monitor_heart, color: Color(0xFF0F4C81)),
+            label: 'Chẩn đoán',
           ),
           NavigationDestination(
             icon: Icon(Icons.folder_outlined),

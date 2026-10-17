@@ -372,3 +372,38 @@ def get_record_detail(record_id: int):
     if not rec:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Record {record_id} not found")
     return rec
+
+
+@app.get("/api/v1/articles", tags=["Patient Health Portal"])
+def get_patient_articles(category: Optional[str] = None):
+    """Returns curated patient cardiovascular health articles, filtered optionally by category."""
+    from src.articles import get_all_articles
+    articles = get_all_articles()
+    if category and category != "Tất cả":
+        articles = [a for a in articles if a["category"] == category or a.get("category_id") == category]
+    return articles
+
+
+@app.get("/api/v1/articles/{article_id}", tags=["Patient Health Portal"])
+def get_patient_article(article_id: str):
+    """Returns full content of a specific cardiovascular health article."""
+    from src.articles import get_article_by_id
+    art = get_article_by_id(article_id)
+    if not art:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Article {article_id} not found")
+    return art
+
+
+@app.get("/api/v1/health-metrics", tags=["Patient Health Portal"])
+def get_standard_health_metrics():
+    """Returns standard medical target metrics (BP, Cholesterol, Glucose, BMI) for patient reference."""
+    from src.articles import STANDARD_HEALTH_METRICS
+    return STANDARD_HEALTH_METRICS
+
+
+@app.get("/api/v1/emergency-contacts", tags=["Patient Health Portal"])
+def get_emergency_contacts():
+    """Returns emergency hotline numbers and specialized cardiovascular centers."""
+    from src.articles import EMERGENCY_CONTACTS
+    return EMERGENCY_CONTACTS
+
