@@ -60,7 +60,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     Text(
                       'Không thể kết nối đến máy chủ SQL:\n${snapshot.error}',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 13, color: Colors.black82),
+                      style: const TextStyle(fontSize: 13, color: Colors.black87),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
