@@ -1,0 +1,12 @@
+# Cardiovascular Disease Prediction: Model Comparison
+
+*Evaluated on Holdout Test Set (N = 13,040)*
+
+| Model                        |   ROC-AUC |   Recall |   Precision |   F1-Score |   Accuracy |   Inference_Sec |
+|------------------------------|-----------|----------|-------------|------------|------------|-----------------|
+| XGBoost (Optuna Tuned)       |    0.8009 |   0.8099 |      0.7517 |     0.7797 |     0.7325 |          0.0150 |
+| XGBoost (Baseline)           |    0.7996 |   0.8052 |      0.7505 |     0.7769 |     0.7297 |          0.0150 |
+| Random Forest                |    0.7979 |   0.8129 |      0.7470 |     0.7785 |     0.7297 |          0.0869 |
+| Support Vector Machine (SVM) |    0.7856 |   0.8208 |      0.7444 |     0.7807 |     0.7305 |          4.4599 |
+
+*Selected Champion Model for Phase 3 (XAI) and Phase 4 (Dashboard):* **XGBoost (Optuna Tuned)**

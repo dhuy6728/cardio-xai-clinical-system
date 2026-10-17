@@ -1,0 +1,10 @@
+{
+    "initial_total": 70000,
+    "dropped_ap_hi_outlier": 2268,
+    "dropped_ap_lo_outlier": 2500,
+    "dropped_inverted_bp": 1795,
+    "dropped_body_bmi_outlier": 436,
+    "total_dropped": 4802,
+    "retained_total": 65198,
+    "retention_rate_pct": 93.14
+}

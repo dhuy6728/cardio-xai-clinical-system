@@ -1,0 +1,36 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Development IDEs
+.vscode/
+.idea/
+
+# Local database instances (data schema is defined in code)
+*.db
+*.sqlite3
+data/cardioxai.db
+
+# Logs and temporary files
+*.log
+.system_generated/
+
+# Mobile Flutter build artifacts
+mobile_app/.dart_tool/
+mobile_app/.packages
+mobile_app/build/
+mobile_app/.flutter-plugins
+mobile_app/.flutter-plugins-dependencies
+
+# Operating system files
+.DS_Store
+Thumbs.db
