@@ -32,6 +32,38 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
 
   double get _bmi => _weight / ((_height / 100) * (_height / 100));
 
+  void _loadPreset(String presetType) {
+    setState(() {
+      if (presetType == 'high') {
+        _name = "Trần Văn Cao";
+        _age = 51.0;
+        _gender = 2;
+        _height = 168.0;
+        _weight = 90.0;
+        _apHi = 145;
+        _apLo = 95;
+        _cholesterol = 3;
+        _gluc = 2;
+        _smoke = true;
+        _alco = false;
+        _active = false;
+      } else if (presetType == 'healthy') {
+        _name = "Lê Thị Thảo";
+        _age = 32.0;
+        _gender = 1;
+        _height = 165.0;
+        _weight = 61.0;
+        _apHi = 118;
+        _apLo = 76;
+        _cholesterol = 1;
+        _gluc = 1;
+        _smoke = false;
+        _alco = false;
+        _active = true;
+      }
+    });
+  }
+
   Future<void> _submitAnalysis() async {
     setState(() {
       _isLoading = true;
@@ -63,7 +95,11 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
         _isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Lỗi kết nối API: $e'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -72,9 +108,24 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Đánh giá Nguy cơ & XAI'),
-        backgroundColor: const Color(0xFF1F4E79),
-        foregroundColor: Colors.white,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text('CardioXAI Pro', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+            Text('Chẩn đoán Nguy cơ & XAI Cá thể hóa', style: TextStyle(fontSize: 11, color: Colors.white70)),
+          ],
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            tooltip: 'Chọn mẫu ca bệnh nhanh',
+            icon: const Icon(Icons.flash_on, color: Colors.amberAccent),
+            onSelected: _loadPreset,
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(value: 'high', child: Text('⚠️ Ca Nguy cơ Cao (51t, HA 145/95)')),
+              const PopupMenuItem(value: 'healthy', child: Text('✓ Ca Khỏe mạnh (32t, HA 118/76)')),
+            ],
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -83,30 +134,55 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
           children: [
             // Patient Input Card
             Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(18.0),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        '🩺 Chỉ số Lâm sàng & Sinh hóa',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1F4E79)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            '👤 Thông tin Lâm sàng',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F4C81)),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _bmi >= 25 ? Colors.amber.shade100 : Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'BMI: ${_bmi.toStringAsFixed(1)} kg/m²',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: _bmi >= 25 ? Colors.orange.shade900 : Colors.green.shade900,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       TextFormField(
+                        key: ValueKey(_name),
                         initialValue: _name,
-                        decoration: const InputDecoration(labelText: 'Tên bệnh nhân', prefixIcon: Icon(Icons.person)),
+                        decoration: InputDecoration(
+                          labelText: 'Họ và tên bệnh nhân',
+                          prefixIcon: const Icon(Icons.person, size: 20),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        ),
                         onChanged: (val) => _name = val,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       Row(
                         children: [
                           Expanded(
-                            child: Text('Tuổi: ${_age.toInt()} tuổi'),
+                            child: Text('Tuổi: ${_age.toInt()} tuổi', style: const TextStyle(fontWeight: FontWeight.w600)),
                           ),
                           Expanded(
                             flex: 2,
@@ -114,8 +190,9 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                               min: 30,
                               max: 65,
                               value: _age,
+                              activeColor: const Color(0xFF0F4C81),
                               divisions: 35,
-                              label: '${_age.toInt()}',
+                              label: '${_age.toInt()} tuổi',
                               onChanged: (v) => setState(() => _age = v),
                             ),
                           ),
@@ -123,56 +200,78 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                       ),
                       Row(
                         children: [
-                          const Text('Giới tính: '),
-                          Radio<int>(value: 2, groupValue: _gender, onChanged: (v) => setState(() => _gender = v!)),
+                          const Text('Giới tính: ', style: TextStyle(fontWeight: FontWeight.w600)),
+                          Radio<int>(value: 2, groupValue: _gender, activeColor: const Color(0xFF0F4C81), onChanged: (v) => setState(() => _gender = v!)),
                           const Text('Nam'),
-                          Radio<int>(value: 1, groupValue: _gender, onChanged: (v) => setState(() => _gender = v!)),
+                          Radio<int>(value: 1, groupValue: _gender, activeColor: const Color(0xFF0F4C81), onChanged: (v) => setState(() => _gender = v!)),
                           const Text('Nữ'),
                         ],
                       ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
                             child: TextFormField(
+                              key: ValueKey(_height),
                               initialValue: '$_height',
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'Chiều cao (cm)'),
+                              decoration: InputDecoration(
+                                labelText: 'Chiều cao (cm)',
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                              ),
                               onChanged: (v) => setState(() => _height = double.tryParse(v) ?? _height),
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: TextFormField(
+                              key: ValueKey(_weight),
                               initialValue: '$_weight',
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'Cân nặng (kg)'),
+                              decoration: InputDecoration(
+                                labelText: 'Cân nặng (kg)',
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                              ),
                               onChanged: (v) => setState(() => _weight = double.tryParse(v) ?? _weight),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'BMI: ${_bmi.toStringAsFixed(1)} kg/m² (${_bmi >= 30 ? "Béo phì" : (_bmi >= 25 ? "Tiền béo phì" : "Bình thường")})',
-                        style: TextStyle(fontWeight: FontWeight.w600, color: _bmi >= 25 ? Colors.deepOrange : Colors.green),
-                      ),
-                      const Divider(height: 24),
+                      const Divider(height: 28),
+                      const Text('🩺 Huyết áp & Sinh hóa', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F4C81))),
+                      const SizedBox(height: 10),
                       Row(
                         children: [
                           Expanded(
                             child: TextFormField(
+                              key: ValueKey(_apHi),
                               initialValue: '$_apHi',
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'Huyết áp tâm thu (ap_hi)'),
+                              decoration: InputDecoration(
+                                labelText: 'HA Tâm thu',
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                              ),
                               onChanged: (v) => setState(() => _apHi = int.tryParse(v) ?? _apHi),
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: TextFormField(
+                              key: ValueKey(_apLo),
                               initialValue: '$_apLo',
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'Huyết áp tâm trương (ap_lo)'),
+                              decoration: InputDecoration(
+                                labelText: 'HA Tâm trương',
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                              ),
                               onChanged: (v) => setState(() => _apLo = int.tryParse(v) ?? _apLo),
                             ),
                           ),
@@ -181,35 +280,60 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                       const SizedBox(height: 12),
                       DropdownButtonFormField<int>(
                         value: _cholesterol,
-                        decoration: const InputDecoration(labelText: 'Cholesterol'),
+                        decoration: InputDecoration(
+                          labelText: 'Cholesterol toàn phần',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                        ),
                         items: const [
-                          DropdownMenuItem(value: 1, child: Text('Mức 1: Bình thường (< 5.2 mmol/L)')),
-                          DropdownMenuItem(value: 2, child: Text('Mức 2: Hơi cao (5.2 - 6.2 mmol/L)')),
-                          DropdownMenuItem(value: 3, child: Text('Mức 3: Rất cao (> 6.2 mmol/L)')),
+                          DropdownMenuItem(value: 1, child: Text('Mức 1: Bình thường (< 5.2)')),
+                          DropdownMenuItem(value: 2, child: Text('Mức 2: Hơi cao (5.2 - 6.2)')),
+                          DropdownMenuItem(value: 3, child: Text('Mức 3: Rất cao (> 6.2)')),
                         ],
                         onChanged: (v) => setState(() => _cholesterol = v!),
                       ),
-                      const SizedBox(height: 8),
-                      CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Hút thuốc lá'),
-                        value: _smoke,
-                        onChanged: (v) => setState(() => _smoke = v!),
-                      ),
-                      CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Vận động thể lực đều đặn'),
-                        value: _active,
-                        onChanged: (v) => setState(() => _active = v!),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CheckboxListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Hút thuốc', style: TextStyle(fontSize: 13)),
+                              value: _smoke,
+                              activeColor: const Color(0xFF0F4C81),
+                              onChanged: (v) => setState(() => _smoke = v!),
+                            ),
+                          ),
+                          Expanded(
+                            child: CheckboxListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Vận động', style: TextStyle(fontSize: 13)),
+                              value: _active,
+                              activeColor: const Color(0xFF0F4C81),
+                              onChanged: (v) => setState(() => _active = v!),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
-                        height: 48,
+                        height: 50,
                         child: ElevatedButton.icon(
-                          icon: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Icon(Icons.analytics),
-                          label: Text(_isLoading ? 'Đang phân tích...' : 'Phân tích Nguy cơ & XAI', style: const TextStyle(fontSize: 16)),
-                          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1F4E79), foregroundColor: Colors.white),
+                          icon: _isLoading
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: white, strokeWidth: 2))
+                              : const Icon(Icons.query_stats, color: Colors.white),
+                          label: Text(
+                            _isLoading ? 'Đang phân tích XAI...' : 'Phân tích Nguy cơ & XAI',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0F4C81),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
                           onPressed: _isLoading ? null : _submitAnalysis,
                         ),
                       ),
@@ -223,93 +347,121 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
 
             // Analysis Result Presentation
             if (_analysisResult != null) ...[
-              Card(
-                color: _analysisResult!.prediction.riskLevel == 'HIGH'
-                    ? const Color(0xFFFDF2F2)
-                    : (_analysisResult!.prediction.riskLevel == 'MODERATE' ? const Color(0xFFFEFCE8) : const Color(0xFFF0FDF4)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _analysisResult!.prediction.riskLevel == 'HIGH'
+                        ? [const Color(0xFFFFF5F5), const Color(0xFFFED7D7)]
+                        : (_analysisResult!.prediction.riskLevel == 'MODERATE'
+                            ? [const Color(0xFFFFFDF0), const Color(0xFFFEFCBF)]
+                            : [const Color(0xFFF0FFF4), const Color(0xFFC6F6D5)]),
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
                     color: _analysisResult!.prediction.riskLevel == 'HIGH'
-                        ? Colors.red
-                        : (_analysisResult!.prediction.riskLevel == 'MODERATE' ? Colors.orange : Colors.green),
-                    width: 2,
+                        ? const Color(0xFFE53E3E)
+                        : (_analysisResult!.prediction.riskLevel == 'MODERATE' ? const Color(0xFFD69E2E) : const Color(0xFF38A169)),
+                    width: 1.5,
                   ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Xác suất Nguy cơ Tim mạch: ${_analysisResult!.prediction.riskPercentage}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: _analysisResult!.prediction.riskLevel == 'HIGH' ? Colors.red.shade900 : Colors.green.shade900,
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Xác suất Bệnh Tim mạch:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF4A5568))),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _analysisResult!.prediction.riskLevel == 'HIGH' ? Colors.red : Colors.green,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _analysisResult!.prediction.riskLevel,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                          ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _analysisResult!.prediction.riskPercentage,
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: _analysisResult!.prediction.riskLevel == 'HIGH' ? const Color(0xFF9B2C2C) : const Color(0xFF22543D),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Phân tầng: ${_analysisResult!.prediction.riskLevel}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _analysisResult!.prediction.recommendation,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontStyle: FontStyle.italic),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _analysisResult!.prediction.recommendation,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF2D3748)),
+                    ),
+                  ],
                 ),
               ),
 
               const SizedBox(height: 16),
 
-              // SHAP Waterfall Contributions
+              // SHAP Waterfall Contributions Card
               Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(18.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        '🔍 Giải thích SHAP: Tác động của từng chỉ số',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1F4E79)),
+                      Row(
+                        children: const [
+                          Icon(Icons.insights, color: Color(0xFF0F4C81), size: 20),
+                          SizedBox(width: 8),
+                          Text('Bóc tách SHAP (Đóng góp Biên)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F4C81))),
+                        ],
                       ),
                       const SizedBox(height: 6),
                       const Text(
-                        '🟥 Đỏ: Làm tăng nguy cơ | 🟦 Xanh: Bảo vệ / Giảm nguy cơ',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                        'Thanh màu thể hiện mức độ tác động của từng chỉ số lên quyết định mô hình:',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF718096)),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       ..._analysisResult!.shapContributions.map((c) {
                         final isPositive = c.shapValue > 0;
+                        final double barWidthRatio = (c.shapValue.abs() / 0.5).clamp(0.05, 1.0);
+
                         return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Row(
+                          padding: const EdgeInsets.symmetric(vertical: 6.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                flex: 3,
-                                child: Text('${c.displayName} (${c.actualValue})', style: const TextStyle(fontSize: 13)),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: isPositive ? Colors.red.shade100 : Colors.blue.shade100,
-                                    borderRadius: BorderRadius.circular(6),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '${c.displayName}: ${c.actualValue}',
+                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2D3748)),
                                   ),
-                                  child: Text(
+                                  Text(
                                     '${isPositive ? "+" : ""}${c.shapValue.toStringAsFixed(3)}',
-                                    textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: isPositive ? Colors.red.shade900 : Colors.blue.shade900,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: isPositive ? const Color(0xFFE53E3E) : const Color(0xFF3182CE),
                                     ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: barWidthRatio,
+                                  minHeight: 6,
+                                  backgroundColor: const Color(0xFFEDF2F7),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    isPositive ? const Color(0xFFE53E3E) : const Color(0xFF3182CE),
                                   ),
                                 ),
                               ),
@@ -328,3 +480,4 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
     );
   }
 }
+const Color white = Colors.white;

@@ -14,17 +14,43 @@ class CardioXaiApp extends StatefulWidget {
 }
 
 class _CardioXaiAppState extends State<CardioXaiApp> {
-  // Mặc định kết nối tới máy chủ FastAPI
-  String _apiHost = "http://10.0.2.2:8000"; // 10.0.2.2 cho Android Emulator hoặc http://IP_LAN:8000 cho máy thật
+  // Default API host connecting to local FastAPI
+  String _apiHost = "http://10.0.2.2:8000";
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CardioXAI Mobile',
+      title: 'CardioXAI Pro',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1F4E79)),
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF0F4C81),
+          primary: const Color(0xFF0F4C81),
+          secondary: const Color(0xFF00B4D8),
+          surface: const Color(0xFFF8FAFC),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF1F5F9),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF0F2027),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: false,
+        ),
+        cardTheme: CardTheme(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+          ),
+          color: Colors.white,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
       ),
       home: MainNavigation(
         apiHost: _apiHost,
@@ -56,20 +82,31 @@ class _MainNavigationState extends State<MainNavigation> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cài đặt Máy chủ API (0đ)'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: const [
+            Icon(Icons.dns, color: Color(0xFF0F4C81)),
+            SizedBox(width: 8),
+            Text('Cài đặt Máy chủ (0đ)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Nhập địa chỉ máy chủ FastAPI (ví dụ IP Wifi máy tính hoặc URL Cloudflare Tunnel / Render):',
-              style: TextStyle(fontSize: 13),
+              'Địa chỉ máy chủ FastAPI (RESTful API):',
+              style: TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             TextField(
               controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'http://192.168.1.x:8000',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                hintText: 'http://10.0.2.2:8000',
+                prefixIcon: const Icon(Icons.link, size: 20),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
               ),
             ),
           ],
@@ -77,14 +114,23 @@ class _MainNavigationState extends State<MainNavigation> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0F4C81),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
             onPressed: () {
               widget.onHostChanged(controller.text.trim());
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Đã cập nhật Host: ${controller.text.trim()}')),
+                SnackBar(
+                  content: Text('Đã cập nhật máy chủ: ${controller.text.trim()}'),
+                  backgroundColor: const Color(0xFF0F4C81),
+                  behavior: SnackBarBehavior.floating,
+                ),
               );
             },
-            child: const Text('Lưu'),
+            child: const Text('Lưu kết nối'),
           ),
         ],
       ),
@@ -100,18 +146,37 @@ class _MainNavigationState extends State<MainNavigation> {
 
     return Scaffold(
       body: screens[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.favorite), label: 'Khám & XAI'),
-          NavigationDestination(icon: Icon(Icons.history), label: 'Lịch sử Bệnh án'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          boxShadow: [
+            BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2)),
+          ],
+        ),
+        child: NavigationBar(
+          backgroundColor: Colors.white,
+          indicatorColor: const Color(0xFF0F4C81).withOpacity(0.12),
+          selectedIndex: _currentIndex,
+          onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.favorite_border),
+              selectedIcon: Icon(Icons.favorite, color: Color(0xFF0F4C81)),
+              label: 'Khám & XAI',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.folder_outlined),
+              selectedIcon: Icon(Icons.folder_shared, color: Color(0xFF0F4C81)),
+              label: 'Hồ sơ SQL',
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.small(
         onPressed: _showSettingsDialog,
+        backgroundColor: const Color(0xFF0F2027),
+        foregroundColor: Colors.white,
         tooltip: 'Cài đặt kết nối Server',
-        child: const Icon(Icons.settings),
+        child: const Icon(Icons.settings, size: 18),
       ),
     );
   }
