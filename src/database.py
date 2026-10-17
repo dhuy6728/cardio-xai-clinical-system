@@ -140,6 +140,28 @@ def save_patient_record(
     return record_id
 
 
+# Aliases for compatibility
+def save_assessment(
+    patient_name: str,
+    patient_data: Dict[str, Any],
+    risk_prob: float,
+    risk_level: str,
+    recommendation: str,
+    shap_data: Optional[Dict[str, Any]] = None,
+    lime_data: Optional[List[Dict[str, Any]]] = None,
+) -> int:
+    """Convenience wrapper for save_patient_record."""
+    return save_patient_record(
+        patient_data=patient_data,
+        risk_prob=risk_prob,
+        risk_level=risk_level,
+        recommendation=recommendation,
+        shap_data=shap_data,
+        lime_data=lime_data,
+        patient_name=patient_name,
+    )
+
+
 def get_patient_history(user_id: Optional[int] = None, limit: int = 50) -> List[Dict[str, Any]]:
     """Retrieves patient historical records ordered by timestamp descending."""
     conn = get_connection()
@@ -160,6 +182,11 @@ def get_patient_history(user_id: Optional[int] = None, limit: int = 50) -> List[
     results = [dict(row) for row in rows]
     conn.close()
     return results
+
+
+def get_all_records(limit: int = 100) -> List[Dict[str, Any]]:
+    """Alias for get_patient_history."""
+    return get_patient_history(user_id=None, limit=limit)
 
 
 def get_record_with_xai(record_id: int) -> Optional[Dict[str, Any]]:
