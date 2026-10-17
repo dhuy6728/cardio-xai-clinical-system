@@ -114,12 +114,12 @@ void main() {
       }
 
       // Kiểm tra có nút chọn phương thức xác thực
-      expect(find.text('Dùng Email'), findsOneWidget);
-      expect(find.text('Dùng Số điện thoại'), findsOneWidget);
+      expect(find.text('Dùng email'), findsOneWidget);
+      expect(find.text('Dùng số điện thoại'), findsOneWidget);
 
       // Kiểm tra có nút chọn vai trò
-      expect(find.text('Bệnh Nhân'), findsOneWidget);
-      expect(find.text('Bác Sĩ'), findsOneWidget);
+      expect(find.text('Bệnh nhân'), findsOneWidget);
+      expect(find.text('Bác sĩ'), findsOneWidget);
     });
 
     testWidgets('Chuyển đổi linh hoạt giữa Email và Số điện thoại', (WidgetTester tester) async {
@@ -128,15 +128,15 @@ void main() {
       ));
 
       // Mặc định là Email
-      expect(find.text('Địa chỉ Email'), findsOneWidget);
+      expect(find.text('Địa chỉ email'), findsOneWidget);
 
-      // Bấm chuyển sang Dùng Số điện thoại
-      await tester.tap(find.text('Dùng Số điện thoại'));
+      // Bấm chuyển sang Dùng số điện thoại
+      await tester.tap(find.text('Dùng số điện thoại'));
       await tester.pumpAndSettle();
 
       // Trường đã đổi sang Số điện thoại
       expect(find.text('Số điện thoại'), findsOneWidget);
-      expect(find.text('Địa chỉ Email'), findsNothing);
+      expect(find.text('Địa chỉ email'), findsNothing);
     });
 
     testWidgets('Kiểm tra từ chối bỏ trống trường khi submit', (WidgetTester tester) async {
@@ -145,7 +145,7 @@ void main() {
       ));
 
       // Bấm nút Đăng nhập khi các ô rỗng
-      await tester.tap(find.text('Đăng Nhập Bệnh Nhân'));
+      await tester.tap(find.text('Đăng nhập bệnh nhân'));
       await tester.pumpAndSettle();
 
       // Phải báo lỗi validation

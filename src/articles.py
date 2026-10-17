@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 ARTICLES_DATA: List[Dict] = [
     {
         "id": "warning-signs-heart-attack",
-        "title": "5 Dấu Hiệu Cảnh Báo Nhồi Máu Cơ Tim Sớm: Khi Nào Cần Gọi Cấp Cứu 115?",
+        "title": "5 dấu hiệu cảnh báo nhồi máu cơ tim sớm: Khi nào cần gọi cấp cứu 115?",
         "category": "Dấu hiệu cảnh báo",
         "category_id": "warning",
         "read_time": "4 phút đọc",
@@ -47,8 +47,8 @@ Nhiều bệnh nhân nữ hoặc người bệnh đái tháo đường không tr
     },
     {
         "id": "hypertension-silent-killer",
-        "title": "Tăng Huyết Áp – 'Kẻ Giết Người Thầm Lặng' & Cách Kiểm Soát Không Dùng Thuốc",
-        "category": "Nguyên nhân & Nguy cơ",
+        "title": "Tăng huyết áp – 'Kẻ giết người thầm lặng' & cách kiểm soát không dùng thuốc",
+        "category": "Nguyên nhân & nguy cơ",
         "category_id": "causes",
         "read_time": "5 phút đọc",
         "author": "ThS.BS Trần Mai Lan - Viện Tim Mạch Quốc Gia",
@@ -79,8 +79,8 @@ Nhiều bệnh nhân nữ hoặc người bệnh đái tháo đường không tr
     },
     {
         "id": "mediterranean-diet-for-heart",
-        "title": "Chế Độ Ăn Địa Trung Hải: 'Tấm Khiên Vàng' Bảo Vệ Thành Mạch & Giảm Mỡ Máu",
-        "category": "Dinh dưỡng & Ăn uống",
+        "title": "Chế độ ăn Địa Trung Hải: 'Tấm khiên vàng' bảo vệ thành mạch & giảm mỡ máu",
+        "category": "Dinh dưỡng & ăn uống",
         "category_id": "nutrition",
         "read_time": "6 phút đọc",
         "author": "BS. Dinh dưỡng Lê Hoàng Quân - ĐH Y Hà Nội",
@@ -109,8 +109,8 @@ Chế độ ăn Địa Trung Hải không chỉ là một chế độ ăn kiêng
     },
     {
         "id": "exercise-guidelines-heart-health",
-        "title": "Vận Động Thể Lực Đúng Cách Cho Trái Tim: Quy Tắc 150 Phút & Nhịp Tim Đích",
-        "category": "Lối sống & Thể thao",
+        "title": "Vận động thể lực đúng cách cho trái tim: Quy tắc 150 phút & nhịp tim đích",
+        "category": "Lối sống & thể thao",
         "category_id": "lifestyle",
         "read_time": "5 phút đọc",
         "author": "BS.CKI Phạm Thanh Tùng - Chuyên khoa Y học Thể thao",
@@ -141,8 +141,8 @@ Khi bạn vận động thể chất thường xuyên:
     },
     {
         "id": "understanding-cholesterol-and-atherosclerosis",
-        "title": "Hiểu Về Mỡ Máu & Mảng Xơ Vữa: Phân Biệt Cholesterol Tốt (HDL) và Xấu (LDL)",
-        "category": "Nguyên nhân & Nguy cơ",
+        "title": "Hiểu về mỡ máu & mảng xơ vữa: Phân biệt cholesterol tốt (HDL) và xấu (LDL)",
+        "category": "Nguyên nhân & nguy cơ",
         "category_id": "causes",
         "read_time": "5 phút đọc",
         "author": "PGS.TS Vũ Đình Hoàng - Trưởng bộ môn Tim mạch",
@@ -171,8 +171,8 @@ Vì chất béo không tan trong máu, nó phải được bao bọc bởi các 
     },
     {
         "id": "10-golden-rules-heart-health",
-        "title": "10 Lời Khuyên Vàng Bảo Vệ Trái Tim Suốt Đời Từ Các Chuyên Gia Tim Mạch",
-        "category": "Lời khuyên Chuyên gia",
+        "title": "10 lời khuyên vàng bảo vệ trái tim suốt đời từ các chuyên gia tim mạch",
+        "category": "Lời khuyên chuyên gia",
         "category_id": "advice",
         "read_time": "4 phút đọc",
         "author": "Ban Chỉ Đạo Dự Án Phòng Chống Bệnh Tim Mạch Quốc Gia",

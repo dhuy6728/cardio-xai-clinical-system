@@ -47,7 +47,7 @@ from src.articles import (
 
 # Page Configuration
 st.set_page_config(
-    page_title="CardioCare AI - Nền tảng Y tế Tim mạch Thông minh",
+    page_title="CardioCare AI - Nền tảng y tế tim mạch thông minh",
     page_icon="🫀",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -286,14 +286,14 @@ model, scaler, shap_explainer, lime_explainer = load_resources()
 # ==========================================
 # SIDEBAR: ROLE / PORTAL SELECTION
 # ==========================================
-st.sidebar.markdown("### 🫀 Nền Tảng CardioXAI")
-st.sidebar.caption("Hệ thống Hỗ trợ Y tế Tim mạch Quốc gia")
+st.sidebar.markdown("### 🫀 Nền tảng CardioXAI")
+st.sidebar.caption("Hệ thống hỗ trợ y tế tim mạch quốc gia")
 
 portal_mode = st.sidebar.radio(
-    "CHỌN VAI TRÒ SỬ DỤNG:",
+    "Chọn vai trò sử dụng:",
     [
-        "🫀 Dành cho Bệnh Nhân (Cộng đồng)",
-        "👨‍⚕️ Dành cho Y Bác Sĩ (Lâm sàng & XAI)",
+        "🫀 Dành cho bệnh nhân (Cộng đồng)",
+        "👨‍⚕️ Dành cho y bác sĩ (Lâm sàng & XAI)",
     ],
     index=0,
 )
@@ -303,16 +303,16 @@ st.sidebar.markdown("---")
 # ==============================================================================
 # 1. PORTAL: DÀNH CHO BỆNH NHÂN (PATIENT HEALTH PORTAL)
 # ==============================================================================
-if "Bệnh Nhân" in portal_mode:
+if "bệnh nhân" in portal_mode.lower():
     # Patient Navigation Menu (Thanh công cụ)
     patient_nav = st.sidebar.radio(
-        "THANH CÔNG CỤ BỆNH NHÂN:",
+        "Thanh công cụ bệnh nhân:",
         [
-            "🏠 Trang Chủ (Kiến thức & Bài báo)",
-            "🩺 Chẩn Đoán (Tự đánh giá nguy cơ)",
-            "📁 Kho Lưu Trữ Sức Khỏe",
-            "📊 Bảng Chỉ Số Sức Khỏe Chuẩn",
-            "🚑 Danh Bạ Cấp Cứu Khẩn Cấp",
+            "🏠 Trang chủ (Kiến thức & bài báo)",
+            "🩺 Chẩn đoán (Tự đánh giá nguy cơ)",
+            "📁 Kho lưu trữ sức khỏe",
+            "📊 Bảng chỉ số sức khỏe chuẩn",
+            "🚑 Danh bạ cấp cứu khẩn cấp",
         ],
         index=0,
     )
@@ -321,12 +321,12 @@ if "Bệnh Nhân" in portal_mode:
     # --------------------------------------------------------------------------
     # 1.1 TRANG CHỦ BỆNH NHÂN (HOME & ARTICLES)
     # --------------------------------------------------------------------------
-    if patient_nav == "🏠 Trang Chủ (Kiến thức & Bài báo)":
+    if patient_nav == "🏠 Trang chủ (Kiến thức & bài báo)":
         # Hero Banner
         st.markdown(
             """
             <div class="patient-hero">
-                <h2>🫀 Vì Một Trái Tim Khỏe Mạnh Cho Bạn & Gia Đình</h2>
+                <h2>🫀 Vì một trái tim khỏe mạnh cho bạn & gia đình</h2>
                 <p>
                     Chào mừng bạn đến với Cổng thông tin & Tự chăm sóc sức khỏe tim mạch <b>CardioXAI</b>.
                     Tại đây, bạn có thể tra cứu kiến thức y khoa chính thống từ Hội Tim Mạch Việt Nam (VNHA) và Hiệp hội Tim mạch Hoa Kỳ (AHA),
@@ -441,11 +441,11 @@ if "Bệnh Nhân" in portal_mode:
     # --------------------------------------------------------------------------
     # 1.2 CHẨN ĐOÁN DÀNH CHO BỆNH NHÂN (PATIENT SELF-ASSESSMENT)
     # --------------------------------------------------------------------------
-    elif patient_nav == "🩺 Chẩn Đoán (Tự đánh giá nguy cơ)":
+    elif patient_nav == "🩺 Chẩn đoán (Tự đánh giá nguy cơ)":
         st.markdown(
             """
             <div class="page-header">
-                <h1 class="page-title">🩺 Tự Đánh Giá Nguy Cơ Tim Mạch Của Bạn</h1>
+                <h1 class="page-title">🩺 Tự đánh giá nguy cơ tim mạch của bạn</h1>
                 <div class="page-subtitle">
                     Hệ thống ứng dụng trí tuệ nhân tạo để phân tích nguy cơ mắc bệnh tim mạch tiềm ẩn.
                     Hãy điền thông tin trung thực dựa trên kết quả khám sức khỏe gần nhất của bạn.
@@ -500,7 +500,7 @@ if "Bệnh Nhân" in portal_mode:
             with p_s3:
                 p_active = 1 if st.checkbox("Có tập thể dục đều đặn (≥ 30 phút/ngày)", value=True) else 0
 
-            submitted = st.form_submit_button("🔬 PHÂN TÍCH NGUY CƠ TIM MẠCH", use_container_width=True)
+            submitted = st.form_submit_button("🔬 Phân tích nguy cơ tim mạch", use_container_width=True)
 
         if submitted:
             # Prepare patient features
@@ -526,10 +526,10 @@ if "Bệnh Nhân" in portal_mode:
             p_prob = float(model.predict_proba(p_df_scaled)[0, 1])
 
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown("### 📊 Kết Quả Đánh Giá Nguy Cơ Sức Khỏe Của Bạn")
+            st.markdown("### 📊 Kết quả đánh giá nguy cơ sức khỏe của bạn")
 
             if p_prob >= 0.65:
-                r_level = "NGUY CƠ CAO"
+                r_level = "Nguy cơ cao"
                 r_color = "#DC2626"
                 r_bg = "dir-high"
                 r_guide = """
@@ -539,7 +539,7 @@ if "Bệnh Nhân" in portal_mode:
                 * **Thuốc lá & Rượu:** Ngừng ngay thuốc lá nếu đang hút vì khói thuốc làm co thắt mạch vành đột ngột.
                 """
             elif p_prob >= 0.35:
-                r_level = "NGUY CƠ TRUNG BÌNH (TIỀM ẨN)"
+                r_level = "Nguy cơ trung bình (Tiềm ẩn)"
                 r_color = "#D97706"
                 r_bg = "dir-mod"
                 r_guide = """
@@ -549,7 +549,7 @@ if "Bệnh Nhân" in portal_mode:
                 * **Dinh dưỡng:** Tăng cường rau xanh, cá hồi/cá thu, các loại hạt dinh dưỡng (hạnh nhân, óc chó) và hạn chế thịt mỡ.
                 """
             else:
-                r_level = "NGUY CƠ THẤP (AN TOÀN)"
+                r_level = "Nguy cơ thấp (An toàn)"
                 r_color = "#16A34A"
                 r_bg = "dir-low"
                 r_guide = """
@@ -563,7 +563,7 @@ if "Bệnh Nhân" in portal_mode:
                 st.markdown(
                     f"""
                     <div class="card-metric">
-                        <div class="card-label">Điểm Nguy Cơ Tim Mạch</div>
+                        <div class="card-label">Điểm nguy cơ tim mạch</div>
                         <div class="card-value" style="color: {r_color};">{p_prob:.1%}</div>
                         <div class="card-sub">Thang đo trí tuệ nhân tạo (XGBoost)</div>
                     </div>
@@ -574,7 +574,7 @@ if "Bệnh Nhân" in portal_mode:
                 st.markdown(
                     f"""
                     <div class="card-metric">
-                        <div class="card-label">Phân Tầng An Toàn</div>
+                        <div class="card-label">Phân tầng an toàn</div>
                         <div class="card-value" style="color: {r_color}; font-size: 1.45rem;">{r_level}</div>
                         <div class="card-sub">Khuyến nghị từ Hội Tim Mạch</div>
                     </div>
@@ -585,7 +585,7 @@ if "Bệnh Nhân" in portal_mode:
                 st.markdown(
                     f"""
                     <div class="card-metric">
-                        <div class="card-label">Thể Trạng BMI</div>
+                        <div class="card-label">Thể trạng BMI</div>
                         <div class="card-value">{p_bmi} <span style="font-size:1rem; font-weight:500;">kg/m²</span></div>
                         <div class="card-sub">Cân nặng {p_weight}kg / Cao {p_height}cm</div>
                     </div>
@@ -596,7 +596,7 @@ if "Bệnh Nhân" in portal_mode:
             st.markdown(
                 f"""
                 <div class="directive-box {r_bg}">
-                    <h4>Lời Khuyên Dành Riêng Cho Bạn:</h4>
+                    <h4>Lời khuyên dành riêng cho bạn:</h4>
                     {r_guide}
                 </div>
                 """,
@@ -610,11 +610,11 @@ if "Bệnh Nhân" in portal_mode:
     # --------------------------------------------------------------------------
     # 1.3 KHO LƯU TRỮ SỨC KHỎE (PATIENT HEALTH HISTORY)
     # --------------------------------------------------------------------------
-    elif patient_nav == "📁 Kho Lưu Trữ Sức Khỏe":
+    elif patient_nav == "📁 Kho lưu trữ sức khỏe":
         st.markdown(
             """
             <div class="page-header">
-                <h1 class="page-title">📁 Kho Lưu Trữ Sức Khỏe Của Bạn</h1>
+                <h1 class="page-title">📁 Kho lưu trữ sức khỏe của bạn</h1>
                 <div class="page-subtitle">Nhật ký theo dõi các lần tự đánh giá nguy cơ tim mạch theo ngày tháng và tình trạng sức khỏe.</div>
             </div>
             """,
@@ -641,17 +641,17 @@ if "Bệnh Nhân" in portal_mode:
                 hide_index=True,
             )
         else:
-            st.info("Chưa có lần đánh giá nào trong Kho lưu trữ. Hãy vào mục '🩺 Chẩn Đoán' để thực hiện đánh giá đầu tiên.")
+            st.info("Chưa có lần đánh giá nào trong Kho lưu trữ. Hãy vào mục '🩺 Chẩn đoán' để thực hiện đánh giá đầu tiên.")
 
     # --------------------------------------------------------------------------
     # 1.4 BẢNG CHỈ SỐ SỨC KHỎE CHUẨN
     # --------------------------------------------------------------------------
-    elif patient_nav == "📊 Bảng Chỉ Số Sức Khỏe Chuẩn":
+    elif patient_nav == "📊 Bảng chỉ số sức khỏe chuẩn":
 
         st.markdown(
             """
             <div class="page-header">
-                <h1 class="page-title">📊 Bảng Tra Cứu Các Chỉ Số Sức Khỏe Tim Mạch Chuẩn</h1>
+                <h1 class="page-title">📊 Bảng tra cứu các chỉ số sức khỏe tim mạch chuẩn</h1>
                 <div class="page-subtitle">Dựa trên khuyến cáo chính thức của Hội Tim Mạch Việt Nam & Hiệp hội Tim mạch Châu Âu (ESC).</div>
             </div>
             """,
@@ -666,13 +666,13 @@ if "Bệnh Nhân" in portal_mode:
                     <div style="font-size: 0.9rem; color: #475569; margin-bottom: 8px;">💡 <b>Lời khuyên đo:</b> {met['advice']}</div>
                     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                         <span style="background: #DCFCE7; color: #166534; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
-                            ✓ Vùng Tối Ưu: {met['optimal']}
+                            ✓ Vùng tối ưu: {met['optimal']}
                         </span>
                         <span style="background: #FEF3C7; color: #92400E; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
-                            ⚠️ Cần Chú Ý: {met['warning']}
+                            ⚠️ Cần chú ý: {met['warning']}
                         </span>
                         <span style="background: #FEE2E2; color: #991B1B; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
-                            🚨 Mức Nguy Hiểm: {met['danger']}
+                            🚨 Mức nguy hiểm: {met['danger']}
                         </span>
                     </div>
                 </div>
@@ -681,13 +681,13 @@ if "Bệnh Nhân" in portal_mode:
             )
 
     # --------------------------------------------------------------------------
-    # 1.4 DANH BẠ CẤP CỨU KHẨN CẤP
+    # 1.5 DANH BẠ CẤP CỨU KHẨN CẤP
     # --------------------------------------------------------------------------
-    elif patient_nav == "🚑 Danh Bạ Cấp Cứu Khẩn Cấp":
+    elif patient_nav == "🚑 Danh bạ cấp cứu khẩn cấp":
         st.markdown(
             """
             <div class="page-header">
-                <h1 class="page-title">🚑 Đường Dây Nóng Cấp Cứu & Cơ Sở Tim Mạch Uy Tín</h1>
+                <h1 class="page-title">🚑 Đường dây nóng cấp cứu & cơ sở tim mạch uy tín</h1>
                 <div class="page-subtitle">Lưu lại ngay những số điện thoại khẩn cấp khi người thân có dấu hiệu đau ngực dữ dội, khó thở hoặc nghi ngờ nhồi máu cơ tim.</div>
             </div>
             """,

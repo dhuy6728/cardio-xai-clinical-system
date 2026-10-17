@@ -47,7 +47,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _isDoctor ? 'Kho Lưu Trữ Bệnh Án' : 'Kho Lưu Trữ Sức Khỏe',
+              _isDoctor ? 'Kho lưu trữ bệnh án' : 'Kho lưu trữ sức khỏe',
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
             ),
             Text(
@@ -127,7 +127,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               final isMod = riskProb >= 0.35 && riskProb < 0.65;
 
               final badgeColor = isHigh ? Colors.red : (isMod ? Colors.orange : Colors.green);
-              final statusText = isHigh ? "NGUY CƠ CAO" : (isMod ? "NGUY CƠ TRUNG BÌNH" : "AN TOÀN");
+              final statusText = isHigh ? "Nguy cơ cao" : (isMod ? "Nguy cơ trung bình" : "Nguy cơ thấp (An toàn)");
 
               // Formatted date string
               final dateStr = r['created_at'] != null

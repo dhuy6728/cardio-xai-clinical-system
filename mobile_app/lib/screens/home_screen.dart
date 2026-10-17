@@ -8,11 +8,11 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback onNavigateToAssessment;
 
   const HomeScreen({
-    Key? key,
+    super.key,
     required this.user,
     required this.apiHost,
     required this.onNavigateToAssessment,
-  }) : super(key: key);
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -27,10 +27,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<String> _categories = [
     "Tất cả",
     "Dấu hiệu cảnh báo",
-    "Nguyên nhân & Nguy cơ",
-    "Dinh dưỡng & Ăn uống",
-    "Lối sống & Thể thao",
-    "Lời khuyên Chuyên gia",
+    "Nguyên nhân & nguy cơ",
+    "Dinh dưỡng & ăn uống",
+    "Lối sống & thể thao",
+    "Lời khuyên chuyên gia",
   ];
 
   @override
@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Map<String, dynamic>> _fallbackArticles = [
     {
       "id": "warning-signs-heart-attack",
-      "title": "5 Dấu Hiệu Cảnh Báo Nhồi Máu Cơ Tim Sớm: Khi Nào Cần Gọi Cấp Cứu 115?",
+      "title": "5 dấu hiệu cảnh báo nhồi máu cơ tim sớm: Khi nào cần gọi cấp cứu 115?",
       "category": "Dấu hiệu cảnh báo",
       "read_time": "4 phút đọc",
       "author": "TS.BS Nguyễn Văn An - Hội Tim Mạch Việt Nam",
@@ -61,8 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
     },
     {
       "id": "hypertension-silent-killer",
-      "title": "Tăng Huyết Áp – 'Kẻ Giết Người Thầm Lặng' & Cách Kiểm Soát Không Dùng Thuốc",
-      "category": "Nguyên nhân & Nguy cơ",
+      "title": "Tăng huyết áp – \"Kẻ giết người thầm lặng\" và cách kiểm soát không dùng thuốc",
+      "category": "Nguyên nhân & nguy cơ",
       "read_time": "5 phút đọc",
       "author": "ThS.BS Trần Mai Lan - Viện Tim Mạch Quốc Gia",
       "date": "12/10/2026",
@@ -79,8 +79,8 @@ class _HomeScreenState extends State<HomeScreen> {
     },
     {
       "id": "mediterranean-diet-for-heart",
-      "title": "Chế Độ Ăn Địa Trung Hải: 'Tấm Khiên Vàng' Bảo Vệ Thành Mạch & Giảm Mỡ Máu",
-      "category": "Dinh dưỡng & Ăn uống",
+      "title": "Chế độ ăn Địa Trung Hải: \"Tấm khiên vàng\" bảo vệ thành mạch và giảm mỡ máu",
+      "category": "Dinh dưỡng & ăn uống",
       "read_time": "6 phút đọc",
       "author": "BS. Dinh dưỡng Lê Hoàng Quân",
       "date": "10/10/2026",
@@ -97,8 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
     },
     {
       "id": "exercise-guidelines-heart-health",
-      "title": "Vận Động Thể Lực Đúng Cách: Quy Tắc 150 Phút & Vùng Nhịp Tim Đích An Toàn",
-      "category": "Lối sống & Thể thao",
+      "title": "Vận động thể lực đúng cách: Quy tắc 150 phút và vùng nhịp tim an toàn",
+      "category": "Lối sống & thể thao",
       "read_time": "5 phút đọc",
       "author": "BS.CKI Phạm Thanh Tùng - Y học Thể thao",
       "date": "08/10/2026",
@@ -115,8 +115,8 @@ class _HomeScreenState extends State<HomeScreen> {
     },
     {
       "id": "10-golden-rules-heart-health",
-      "title": "10 Lời Khuyên Vàng Bảo Vệ Trái Tim Suốt Đời Từ Chuyên Gia Tim Mạch",
-      "category": "Lời khuyên Chuyên gia",
+      "title": "10 lời khuyên vàng bảo vệ trái tim từ chuyên gia tim mạch",
+      "category": "Lời khuyên chuyên gia",
       "read_time": "4 phút đọc",
       "author": "Ban Chỉ Đạo Phòng Chống Tim Mạch Quốc Gia",
       "date": "01/10/2026",
@@ -345,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(Icons.favorite, color: Colors.redAccent, size: 22),
             SizedBox(width: 8),
             Text(
-              "CardioCare Sức Khỏe",
+              "CardioCare Sức khỏe",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
           ],
@@ -421,7 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: widget.onNavigateToAssessment,
                     icon: const Icon(Icons.monitor_heart, color: Color(0xFF0F4C81), size: 18),
                     label: const Text(
-                      "Chẩn Đoán & Tự Đánh Giá Nguy Cơ Ngay",
+                      "Tự đánh giá nguy cơ ngay",
                       style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F4C81), fontSize: 13),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -437,9 +437,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 16),
 
-            // 4 Chỉ số vàng
+            // 4 Chỉ số quan trọng
             const Text(
-              "4 Chỉ Số Vàng Tim Mạch",
+              "4 chỉ số tim mạch quan trọng",
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 8),

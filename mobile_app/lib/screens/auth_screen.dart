@@ -158,18 +158,22 @@ class _AuthScreenState extends State<AuthScreen> {
     final isEmail = _authMethod == 'email';
     final primaryColor = isPatient ? const Color(0xFF0284C7) : const Color(0xFF0F4C81);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   // App Icon / Logo
                   Center(
                     child: Container(
@@ -200,7 +204,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   // Brand Title
                   Center(
                     child: Text(
-                      isPatient ? 'CardioCare Sức Khỏe' : 'CardioCare Bác Sĩ',
+                      isPatient ? 'CardioCare Sức khỏe' : 'CardioCare Bác sĩ',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
@@ -254,7 +258,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 children: [
                                   const Text('🫀 ', style: TextStyle(fontSize: 15)),
                                   Text(
-                                    'Bệnh Nhân',
+                                    'Bệnh nhân',
                                     style: TextStyle(
                                       fontWeight: isPatient ? FontWeight.bold : FontWeight.w600,
                                       color: isPatient ? const Color(0xFF0284C7) : const Color(0xFF64748B),
@@ -290,7 +294,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 children: [
                                   const Text('👨‍⚕️ ', style: TextStyle(fontSize: 15)),
                                   Text(
-                                    'Bác Sĩ',
+                                    'Bác sĩ',
                                     style: TextStyle(
                                       fontWeight: !isPatient ? FontWeight.bold : FontWeight.w600,
                                       color: !isPatient ? const Color(0xFF0F4C81) : const Color(0xFF64748B),
@@ -335,7 +339,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Dùng Email',
+                                  'Dùng email',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: isEmail ? FontWeight.bold : FontWeight.w500,
@@ -372,7 +376,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Dùng Số điện thoại',
+                                  'Dùng số điện thoại',
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: !isEmail ? FontWeight.bold : FontWeight.w500,
@@ -389,7 +393,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Bảo Mật Kho Lưu Trữ Badge
+                  // Bảo mật kho lưu trữ badge
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
@@ -403,7 +407,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Bảo mật danh tính & đồng bộ Kho lưu trữ an toàn',
+                            'Bảo mật danh tính & đồng bộ kho lưu trữ an toàn',
                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF166534)),
                           ),
                         ),
@@ -448,8 +452,9 @@ class _AuthScreenState extends State<AuthScreen> {
                   if (!_isLogin) ...[
                     TextFormField(
                       controller: _fullNameController,
+                      textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
-                        labelText: isPatient ? 'Họ và tên của bạn' : 'Họ và tên Bác sĩ',
+                        labelText: isPatient ? 'Họ và tên của bạn' : 'Họ và tên bác sĩ',
                         hintText: isPatient ? 'Nhập họ và tên đầy đủ' : 'Ví dụ: Bác sĩ Nguyễn Văn A',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                         prefixIcon: const Icon(Icons.person_outline),
@@ -463,12 +468,14 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 14),
                   ],
 
-                  // Email HOẶC Số điện thoại (Chỉ yêu cầu 1 trong 2)
+                  // Email hoặc Số điện thoại (Chỉ yêu cầu 1 trong 2)
                   TextFormField(
                     controller: _identifierController,
                     keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.phone,
+                    textInputAction: TextInputAction.next,
+                    autocorrect: false,
                     decoration: InputDecoration(
-                      labelText: isEmail ? 'Địa chỉ Email' : 'Số điện thoại',
+                      labelText: isEmail ? 'Địa chỉ email' : 'Số điện thoại',
                       hintText: isEmail
                           ? 'Nhập địa chỉ email (VD: vidu@gmail.com)'
                           : 'Nhập số điện thoại (VD: 0912345678)',
@@ -504,6 +511,8 @@ class _AuthScreenState extends State<AuthScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _submit(),
                     decoration: InputDecoration(
                       labelText: 'Mật khẩu',
                       hintText: 'Nhập mật khẩu của bạn (tối thiểu 6 ký tự)',
@@ -527,7 +536,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Nút Gửi (Đăng Nhập / Đăng Ký)
+                  // Nút Gửi (Đăng nhập / Đăng ký)
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
@@ -542,8 +551,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                           : Text(
                               _isLogin
-                                  ? (isPatient ? 'Đăng Nhập Bệnh Nhân' : 'Đăng Nhập Bác Sĩ')
-                                  : (isPatient ? 'Đăng Ký Tài Khoản Bệnh Nhân' : 'Đăng Ký Tài Khoản Bác Sĩ'),
+                                  ? (isPatient ? 'Đăng nhập bệnh nhân' : 'Đăng nhập bác sĩ')
+                                  : (isPatient ? 'Đăng ký tài khoản bệnh nhân' : 'Đăng ký tài khoản bác sĩ'),
                               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                             ),
                     ),
@@ -551,7 +560,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   const SizedBox(height: 14),
 
-                  // Chuyển đổi giữa Đăng Nhập và Đăng Ký
+                  // Chuyển đổi giữa Đăng nhập và Đăng ký
                   TextButton(
                     onPressed: () {
                       setState(() {
@@ -564,8 +573,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     },
                     child: Text(
                       _isLogin
-                          ? 'Chưa có tài khoản? Bấm để Đăng ký ngay'
-                          : 'Đã có tài khoản? Quay lại Đăng nhập',
+                          ? 'Chưa có tài khoản? Đăng ký ngay'
+                          : 'Đã có tài khoản? Đăng nhập ngay',
                       style: TextStyle(
                         color: primaryColor,
                         fontWeight: FontWeight.w600,
@@ -578,6 +587,7 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

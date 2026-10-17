@@ -32,7 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Đổi Mật Khẩu', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          title: const Text('Đổi mật khẩu', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -87,6 +87,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         return;
                       }
 
+                      final messenger = ScaffoldMessenger.of(context);
+                      final nav = Navigator.of(ctx);
                       setDialogState(() => _isLoading = true);
 
                       try {
@@ -98,11 +100,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         );
 
                         if (mounted) {
-                          Navigator.pop(ctx);
+                          nav.pop();
                           _oldPasswordController.clear();
                           _newPasswordController.clear();
                           _confirmPasswordController.clear();
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(
                               content: Text('Đổi mật khẩu thành công!'),
                               backgroundColor: Color(0xFF16A34A),
@@ -111,7 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text('$e'.replaceAll('Exception: ', '')),
                               backgroundColor: const Color(0xFFDC2626),
@@ -141,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Tài Khoản & Cài Đặt', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text('Tài khoản & cài đặt', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         backgroundColor: themeColor,
         foregroundColor: Colors.white,
       ),
@@ -174,7 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       border: Border.all(color: isDoctor ? const Color(0xFFBFDBFE) : const Color(0xFFA7F3D0)),
                     ),
                     child: Text(
-                      isDoctor ? '👨‍⚕️ Tài khoản Bác sĩ' : '🫀 Tài khoản Bệnh nhân',
+                      isDoctor ? '👨‍⚕️ Tài khoản bác sĩ' : '🫀 Tài khoản bệnh nhân',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -200,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     leading: Icon(Icons.swap_horiz, color: themeColor),
                     title: const Text('Chuyển đổi giao diện vai trò', style: TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: Text(
-                      isDoctor ? 'Đang ở Cổng Bác Sĩ (Lâm sàng & XAI)' : 'Đang ở Cổng Bệnh Nhân (Sức khỏe & Bài báo)',
+                      isDoctor ? 'Đang ở cổng bác sĩ (Lâm sàng & XAI)' : 'Đang ở cổng bệnh nhân (Sức khỏe & bài báo)',
                       style: const TextStyle(fontSize: 12),
                     ),
                     trailing: OutlinedButton(
@@ -214,7 +216,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         widget.onRoleChanged?.call(nextRole);
                       },
                       child: Text(
-                        isDoctor ? 'Sang Bệnh Nhân' : 'Sang Bác Sĩ',
+                        isDoctor ? 'Sang bệnh nhân' : 'Sang bác sĩ',
                         style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -249,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(height: 1),
                   ListTile(
                     leading: Icon(Icons.info_outline, color: themeColor),
-                    title: const Text('Phiên bản Ứng dụng', style: TextStyle(fontWeight: FontWeight.w600)),
+                    title: const Text('Phiên bản ứng dụng', style: TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: const Text('CardioCare AI v1.2.0 (XGBoost + SHAP/LIME)', style: TextStyle(fontSize: 12)),
                   ),
                 ],
@@ -263,7 +265,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               height: 48,
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.logout, color: Color(0xFFDC2626)),
-                label: const Text('Đăng Xuất Khỏi Thiết Bị', style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
+                label: const Text('Đăng xuất khỏi thiết bị', style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFFDC2626)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

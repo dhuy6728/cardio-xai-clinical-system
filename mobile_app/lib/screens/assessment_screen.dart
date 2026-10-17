@@ -141,7 +141,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _isDoctor ? 'Hội Chẩn Lâm Sàng (Bác Sĩ)' : 'Tự Đánh Giá Nguy Cơ Tim Mạch',
+              _isDoctor ? 'Hội chẩn lâm sàng (Bác sĩ)' : 'Tự đánh giá nguy cơ tim mạch',
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
             ),
             Text(
@@ -157,17 +157,21 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
               icon: const Icon(Icons.flash_on, color: Colors.amberAccent),
               onSelected: _loadPreset,
               itemBuilder: (ctx) => const [
-                PopupMenuItem(value: 'high', child: Text('⚠️ Ca Nguy cơ Cao (51t, HA 145/95)')),
-                PopupMenuItem(value: 'healthy', child: Text('✓ Ca Khỏe mạnh (32t, HA 118/76)')),
+                PopupMenuItem(value: 'high', child: Text('⚠️ Ca nguy cơ cao (51t, HA 145/95)')),
+                PopupMenuItem(value: 'healthy', child: Text('✓ Ca khỏe mạnh (32t, HA 118/76)')),
               ],
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      body: GestureDetector(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             // Patient Identification / Profile banner
             if (!_isDoctor)
               Container(
@@ -233,7 +237,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                         children: [
                           Expanded(
                             child: Text(
-                              _isDoctor ? '👤 Thông tin Ca Bệnh' : '📊 Thể trạng & Sức khỏe',
+                              _isDoctor ? '👤 Thông tin ca bệnh' : '📊 Thể trạng và sức khỏe',
                               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: themeColor),
                             ),
                           ),
@@ -342,7 +346,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                       const SizedBox(height: 10),
 
                       Text(
-                        '🩺 Huyết áp & Chỉ số Sinh hóa',
+                        '🩺 Huyết áp & chỉ số sinh hóa',
                         style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: themeColor),
                       ),
                       const SizedBox(height: 12),
@@ -451,8 +455,8 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                               : const Icon(Icons.analytics_outlined),
                           label: Text(
                             _isDoctor
-                                ? 'Phân tích Lâm sàng & Lưu Kho lưu trữ'
-                                : 'Đánh Giá Nguy Cơ & Lưu Kho Lưu Trữ',
+                                ? 'Phân tích lâm sàng & lưu kho lưu trữ'
+                                : 'Đánh giá nguy cơ & lưu kho lưu trữ',
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -477,8 +481,9 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildResultCard(FullAnalysisResult res) {
     final pred = res.prediction;
@@ -487,7 +492,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
     final isMod = prob >= 0.35 && prob < 0.65;
 
     final badgeColor = isHigh ? Colors.red : (isMod ? Colors.orange : Colors.green);
-    final badgeText = isHigh ? "NGUY CƠ CAO" : (isMod ? "NGUY CƠ TRUNG BÌNH" : "AN TOÀN");
+    final badgeText = isHigh ? "Nguy cơ cao" : (isMod ? "Nguy cơ trung bình" : "Nguy cơ thấp (An toàn)");
 
     return Card(
       elevation: 0,
@@ -505,7 +510,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Kết Quả Đánh Giá Nguy Cơ',
+                  'Kết quả đánh giá nguy cơ',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                 ),
                 Container(
@@ -548,12 +553,12 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Icon(Icons.check_circle, size: 16, color: Color(0xFF16A34A)),
                 SizedBox(width: 6),
                 Text(
-                  'Đã tự động ghi nhận vào Kho lưu trữ của hệ thống.',
+                  'Đã ghi nhận vào kho lưu trữ của hệ thống.',
                   style: TextStyle(fontSize: 12, color: Color(0xFF166534), fontWeight: FontWeight.w600),
                 ),
               ],

@@ -1,5 +1,5 @@
-/// Data models for CardioXAI Mobile Client.
-/// Maps directly to the FastAPI schemas.
+// Data models for CardioXAI Mobile Client.
+// Maps directly to the FastAPI schemas.
 
 class PatientInput {
   final double age;
