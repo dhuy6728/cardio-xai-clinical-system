@@ -6,17 +6,17 @@ import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
 
 void main() {
-  runApp(const CardioXaiApp());
+  runApp(const CardioCareApp());
 }
 
-class CardioXaiApp extends StatefulWidget {
-  const CardioXaiApp({super.key});
+class CardioCareApp extends StatefulWidget {
+  const CardioCareApp({super.key});
 
   @override
-  State<CardioXaiApp> createState() => _CardioXaiAppState();
+  State<CardioCareApp> createState() => _CardioCareAppState();
 }
 
-class _CardioXaiAppState extends State<CardioXaiApp> {
+class _CardioCareAppState extends State<CardioCareApp> {
   // Mặc định kết nối tới máy chủ FastAPI
   String _apiHost = "http://10.0.2.2:8000";
 
@@ -29,7 +29,7 @@ class _CardioXaiAppState extends State<CardioXaiApp> {
     final primaryColor = isDoctor ? const Color(0xFF0F4C81) : const Color(0xFF0284C7);
 
     return MaterialApp(
-      title: 'CardioXAI',
+      title: 'CardioCare AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,

@@ -37,11 +37,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
   void _applyRoleDefaults() {
     if (_selectedRole == 'patient') {
-      _emailController = TextEditingController(text: 'benhnhan@cardioxai.vn');
+      _emailController = TextEditingController(text: 'benhnhan@cardiocare.vn');
       _passwordController = TextEditingController(text: 'matkhau123');
       _fullNameController = TextEditingController(text: 'Nguyễn Văn Bệnh Nhân');
     } else {
-      _emailController = TextEditingController(text: 'bacsi@cardioxai.vn');
+      _emailController = TextEditingController(text: 'bacsi@cardiocare.vn');
       _passwordController = TextEditingController(text: 'matkhau123');
       _fullNameController = TextEditingController(text: 'Bác sĩ Nguyễn Văn A');
     }
@@ -148,7 +148,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   const SizedBox(height: 14),
                   Center(
                     child: Text(
-                      isPatient ? 'CardioXAI Sức Khỏe' : 'CardioXAI Bác Sĩ',
+                      isPatient ? 'CardioCare Sức Khỏe' : 'CardioCare Bác Sĩ',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,

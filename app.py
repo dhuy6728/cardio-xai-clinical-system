@@ -47,7 +47,7 @@ from src.articles import (
 
 # Page Configuration
 st.set_page_config(
-    page_title="CardioXAI - Nền tảng Y tế Tim mạch Thông minh",
+    page_title="CardioCare AI - Nền tảng Y tế Tim mạch Thông minh",
     page_icon="🫀",
     layout="wide",
     initial_sidebar_state="expanded",

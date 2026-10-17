@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CardioXAI - Nền tảng Y tế Tim mạch Thông minh</title>
+  <title>CardioCare AI - Hệ Thống Quản Lý Sức Khỏe Tim Mạch Thông Minh</title>
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -16,85 +18,501 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
           },
           colors: {
-            clinical: {
+            brand: {
               50: '#F0F9FF',
               100: '#E0F2FE',
               500: '#0284C7',
               600: '#0369A1',
-              700: '#0F4C81',
-              800: '#075985',
-              900: '#0C4A6E',
+              700: '#075985',
+              800: '#0C4A6E',
             }
           }
         }
       }
     }
   </script>
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #0F172A; }
-    .tab-active { border-bottom: 3px solid #0284C7; color: #0284C7; font-weight: 700; }
-    .badge-high { background-color: #FEE2E2; color: #991B1B; }
-    .badge-mod { background-color: #FEF3C7; color: #92400E; }
-    .badge-low { background-color: #DCFCE7; color: #166534; }
+    .badge-high { background-color: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+    .badge-mod { background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+    .badge-low { background-color: #DCFCE7; color: #166534; border: 1px solid #BBF7D0; }
+    /* Smooth transitions */
+    .fade-in { animation: fadeIn 0.2s ease-in-out forwards; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Toast styles */
+    #toast-notification {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
   </style>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800">
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased selection:bg-sky-500 selection:text-white">
 
-  <!-- TOP HEADER & ROLE SWITCHER -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-notification" class="fixed top-5 right-5 z-[100] transform translate-y-[-120%] opacity-0 pointer-events-none transition-all duration-300 max-w-md w-full px-4">
+    <div id="toast-body" class="bg-slate-900 text-white rounded-2xl p-4 shadow-2xl flex items-center gap-3 border border-slate-700">
+      <div id="toast-icon" class="text-xl text-emerald-400">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <div class="flex-1 text-sm font-medium" id="toast-message">Thông báo thành công</div>
+      <button onclick="hideToast()" class="text-slate-400 hover:text-white text-sm p-1">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- TOP HEADER & BRAND -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
-        <!-- Logo & Brand -->
-        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchNav('home')">
+        <!-- Brand Logo -->
+        <div class="flex items-center space-x-3 cursor-pointer select-none" onclick="switchNav('home')">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-rose-500 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
             <i class="fa-solid fa-heart-pulse text-xl"></i>
           </div>
           <div>
             <div class="font-extrabold text-xl tracking-tight text-slate-900 flex items-center gap-1.5">
-              CardioXAI <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800">Online</span>
+              CardioCare <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">AI</span>
             </div>
-            <p class="text-xs text-slate-500 hidden sm:block">Hệ thống Y tế Tim mạch & Trí tuệ Nhân tạo Minh bạch</p>
+            <p class="text-xs text-slate-500 hidden sm:block">Trợ Lý Sức Khỏe Tim Mạch & Hội Chẩn Y Khoa</p>
           </div>
         </div>
 
-        <!-- ROLE SWITCHER TOGGLE -->
+        <!-- Role Selector (Patient vs Doctor) -->
         <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-          <button id="role-patient-btn" onclick="setRole('patient')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-sky-700">
+          <button id="role-patient-btn" onclick="selectRole('patient')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-sky-700">
             <span>🫀 Bệnh Nhân</span>
           </button>
-          <button id="role-doctor-btn" onclick="setRole('doctor')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
+          <button id="role-doctor-btn" onclick="selectRole('doctor')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
             <span>👨‍⚕️ Bác Sĩ</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- NAVIGATION SUBBAR -->
+    <!-- SUB-NAVIGATION BAR (Persistent Tabs) -->
     <div class="bg-white/95 backdrop-blur border-t border-slate-100">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto scrollbar-none space-x-6 text-sm font-medium" id="nav-container">
-        <!-- Injected via JavaScript based on role -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex overflow-x-auto scrollbar-none space-x-6 text-sm font-medium">
+        <!-- Patient Tabs -->
+        <div id="patient-nav-group" class="flex space-x-6">
+          <button id="nav-btn-home" onclick="switchNav('home')" class="py-3 px-1 border-b-2 border-sky-600 text-sky-600 font-bold flex items-center gap-2 transition">
+            <i class="fa-solid fa-house"></i> Trang Chủ & Cẩm Nang
+          </button>
+          <button id="nav-btn-assessment" onclick="switchNav('assessment')" class="py-3 px-1 border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-2 transition">
+            <i class="fa-solid fa-heart-pulse"></i> Chẩn Đoán Nguy Cơ
+          </button>
+          <button id="nav-btn-history" onclick="switchNav('history')" class="py-3 px-1 border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-2 transition">
+            <i class="fa-solid fa-folder-closed"></i> Kho Lưu Trữ Sức Khỏe
+          </button>
+          <button id="nav-btn-metrics" onclick="switchNav('metrics')" class="py-3 px-1 border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-2 transition">
+            <i class="fa-solid fa-chart-simple"></i> Bảng Chỉ Số Chuẩn
+          </button>
+          <button id="nav-btn-emergency" onclick="switchNav('emergency')" class="py-3 px-1 border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-2 transition">
+            <i class="fa-solid fa-phone-volume text-rose-500"></i> Cấp Cứu 115
+          </button>
+        </div>
+
+        <!-- Doctor Tabs -->
+        <div id="doctor-nav-group" class="hidden flex space-x-6">
+          <button id="nav-btn-doctor-diagnose" onclick="switchNav('doctor-diagnose')" class="py-3 px-1 border-b-2 border-sky-600 text-sky-600 font-bold flex items-center gap-2 transition">
+            <i class="fa-solid fa-stethoscope"></i> Khám Lâm Sàng & Phân Tích XAI
+          </button>
+          <button id="nav-btn-doctor-history" onclick="switchNav('doctor-history')" class="py-3 px-1 border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-2 transition">
+            <i class="fa-solid fa-folder-tree"></i> Kho Lưu Trữ Bệnh Án
+          </button>
+          <button id="nav-btn-doctor-articles" onclick="switchNav('home')" class="py-3 px-1 border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center gap-2 transition">
+            <i class="fa-solid fa-book-medical"></i> Cẩm Nang Hướng Dẫn
+          </button>
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- MAIN CONTENT CONTAINER -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8" id="app-root">
-    <!-- Dynamic views will render here -->
+  <!-- MAIN APP CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- ==================== VIEW 1: HOME & ARTICLES (PATIENT) ==================== -->
+    <section id="view-home" class="fade-in">
+      <!-- Hero Banner -->
+      <div class="bg-gradient-to-r from-sky-600 via-sky-700 to-indigo-800 rounded-3xl p-6 sm:p-10 text-white shadow-xl mb-10 relative overflow-hidden">
+        <div class="relative z-10 max-w-3xl">
+          <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold mb-4 backdrop-blur-sm">
+            <i class="fa-solid fa-shield-heart mr-1.5 text-rose-300"></i> CardioCare AI — Chăm Sóc Sức Khỏe Toàn Diện
+          </span>
+          <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-4 leading-tight">
+            Chủ Động Phòng Ngừa Biến Cố Tim Mạch & Nhồi Máu Cơ Tim
+          </h1>
+          <p class="text-sky-100 text-sm sm:text-base mb-6 leading-relaxed">
+            Hệ thống cung cấp cẩm nang y khoa chuẩn hóa từ Hội Tim Mạch Việt Nam kết hợp mô hình AI phân tích nguy cơ tim mạch sớm, minh bạch và hoàn toàn miễn phí.
+          </p>
+          <div class="flex flex-wrap gap-4">
+            <button onclick="switchNav('assessment')" class="px-6 py-3 rounded-xl bg-white text-sky-700 font-bold shadow-lg hover:bg-sky-50 transition flex items-center gap-2 active:scale-95">
+              <i class="fa-solid fa-heart-pulse text-rose-500"></i> Đánh Giá Nguy Cơ Của Bạn
+            </button>
+            <button onclick="switchNav('emergency')" class="px-5 py-3 rounded-xl bg-sky-800/60 hover:bg-sky-800 text-white font-semibold backdrop-blur-sm transition flex items-center gap-2 border border-white/20 active:scale-95">
+              <i class="fa-solid fa-phone text-rose-300"></i> Đường Dây Cấp Cứu 115
+            </button>
+          </div>
+        </div>
+        <div class="absolute right-0 bottom-0 opacity-10 text-white text-9xl transform translate-x-12 translate-y-8 select-none pointer-events-none">
+          <i class="fa-solid fa-heart-pulse"></i>
+        </div>
+      </div>
+
+      <!-- Section Title -->
+      <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-newspaper text-sky-600"></i> Cẩm Nang Sức Khỏe & Bài Báo Y Khoa
+          </h2>
+          <p class="text-sm text-slate-500 mt-0.5">Kiến thức chuyên sâu từ các chuyên gia tim mạch hàng đầu</p>
+        </div>
+        <span class="text-xs bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium">6 Bài báo chuẩn y khoa</span>
+      </div>
+
+      <!-- Articles Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="articles-grid">
+        <!-- Rendered by JavaScript -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2: PATIENT ASSESSMENT (NO NAME ASKED) ==================== -->
+    <section id="view-assessment" class="hidden fade-in max-w-3xl mx-auto">
+      <!-- Info Header -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-6">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl flex-shrink-0">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-slate-900">Tự Đánh Giá Nguy Cơ Tim Mạch (Bệnh Nhân)</h1>
+            <p class="text-sm text-slate-500 mt-1 leading-relaxed">
+              Nhằm bảo mật tuyệt đối quyền riêng tư, hệ thống <b>không yêu cầu nhập họ và tên</b>. Khi bấm đánh giá, kết quả sẽ tự động lưu vào <b>Kho lưu trữ sức khỏe</b> theo ngày và tình trạng nguy cơ.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form id="patient-assessment-form" onsubmit="submitPatientAssessment(event)" class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+        <!-- 1. Body metrics -->
+        <div>
+          <h3 class="text-base font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">1</span>
+            Thông Số Thể Trạng
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Tuổi của bạn (năm):</label>
+              <input type="number" id="p-age" min="18" max="95" value="48" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Giới tính sinh học:</label>
+              <div class="flex gap-4 mt-2">
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="p-gender" value="2" checked class="text-sky-600"> Nam
+                </label>
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="p-gender" value="1" class="text-sky-600"> Nữ
+                </label>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Chiều cao (cm):</label>
+              <input type="number" id="p-height" min="120" max="220" value="165" oninput="calcPatientBMI()" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Cân nặng (kg):</label>
+              <input type="number" id="p-weight" min="30" max="180" step="0.5" value="68" oninput="calcPatientBMI()" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+            </div>
+          </div>
+          <div class="mt-3 bg-sky-50 border border-sky-100 rounded-xl p-3 flex items-center justify-between text-xs">
+            <span class="text-slate-600 font-medium">Chỉ số thể trạng tính toán (BMI):</span>
+            <span id="p-bmi-badge" class="font-bold text-sky-700 text-sm">24.98 kg/m² (Thừa cân nhẹ)</span>
+          </div>
+        </div>
+
+        <!-- 2. Blood pressure & biochemistry -->
+        <div>
+          <h3 class="text-base font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">2</span>
+            Huyết Áp & Xét Nghiệm Máu (Nếu có)
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Huyết áp tối đa (Tâm thu - mmHg):</label>
+              <input type="number" id="p-ap-hi" min="80" max="230" value="130" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-semibold">
+              <span class="text-[11px] text-slate-400">Số đo phía trên trên máy đo huyết áp</span>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Huyết áp tối thiểu (Tâm trương - mmHg):</label>
+              <input type="number" id="p-ap-lo" min="50" max="140" value="85" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-semibold">
+              <span class="text-[11px] text-slate-400">Số đo phía dưới trên máy đo huyết áp</span>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Mức Cholesterol trong máu:</label>
+              <select id="p-chol" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white">
+                <option value="1">1: Bình thường (< 5.2 mmol/L)</option>
+                <option value="2">2: Hơi cao / Ranh giới (5.2 - 6.2 mmol/L)</option>
+                <option value="3">3: Rất cao (> 6.2 mmol/L)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Đường huyết lúc đói (Glucose):</label>
+              <select id="p-gluc" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white">
+                <option value="1">1: Bình thường (< 5.6 mmol/L)</option>
+                <option value="2">2: Tiền đái tháo đường (5.6 - 6.9 mmol/L)</option>
+                <option value="3">3: Đái tháo đường (≥ 7.0 mmol/L)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Habits -->
+        <div>
+          <h3 class="text-base font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">3</span>
+            Thói Quen Hàng Ngày
+          </h3>
+          <div class="space-y-3">
+            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+              <input type="checkbox" id="p-smoke" class="w-4 h-4 text-sky-600 rounded">
+              <span class="text-sm font-medium text-slate-700">Có hút thuốc lá (chủ động hoặc thường xuyên tiếp xúc khói thuốc)</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+              <input type="checkbox" id="p-alco" class="w-4 h-4 text-sky-600 rounded">
+              <span class="text-sm font-medium text-slate-700">Có uống bia rượu hàng tuần</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+              <input type="checkbox" id="p-active" checked class="w-4 h-4 text-sky-600 rounded">
+              <span class="text-sm font-medium text-slate-700">Có vận động thể dục đều đặn (≥ 30 phút mỗi ngày)</span>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" id="btn-submit-patient" class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white font-bold text-base shadow-lg shadow-sky-500/20 transition active:scale-[0.99] flex items-center justify-center gap-2">
+          <i class="fa-solid fa-microchip"></i> ĐÁNH GIÁ NGUY CƠ & LƯU VÀO KHO LƯU TRỮ
+        </button>
+      </form>
+
+      <!-- Assessment Result Block -->
+      <div id="patient-result-box" class="hidden mt-8 fade-in">
+        <!-- Rendered by JavaScript -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3: PATIENT HISTORY (ONLY SUBMITTED RECORDS) ==================== -->
+    <section id="view-history" class="hidden fade-in max-w-4xl mx-auto">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 mb-6 border-b border-slate-200">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-folder-closed text-sky-600"></i> Kho Lưu Trữ Sức Khỏe Của Bạn
+          </h1>
+          <p class="text-sm text-slate-500 mt-1">
+            Chỉ lưu trữ các ca khám đã được xác nhận. Lưu trữ bảo mật theo <b>Ngày khám</b> và <b>Tình trạng</b>.
+          </p>
+        </div>
+        <div class="mt-4 sm:mt-0 flex gap-2">
+          <button onclick="switchNav('assessment')" class="px-4 py-2 rounded-xl bg-sky-600 text-white font-semibold text-sm shadow hover:bg-sky-700 transition flex items-center gap-2 active:scale-95">
+            <i class="fa-solid fa-plus"></i> Đánh Giá Mới
+          </button>
+        </div>
+      </div>
+
+      <!-- Real Records List Container -->
+      <div id="patient-records-container" class="space-y-4">
+        <!-- Injected dynamically from Database/LocalStorage -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 4: METRICS TABLE ==================== -->
+    <section id="view-metrics" class="hidden fade-in max-w-4xl mx-auto">
+      <div class="pb-6 mb-6 border-b border-slate-200">
+        <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-chart-simple text-sky-600"></i> Bảng Chỉ Số Sức Khỏe Chuẩn Y Khoa
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+          Đối chiếu kết quả khám sức khỏe với tiêu chuẩn khuyến cáo của Hội Tim Mạch Việt Nam (VNHA) & Châu Âu (ESC).
+        </p>
+      </div>
+
+      <div class="space-y-4" id="standard-metrics-container">
+        <!-- Rendered by JavaScript -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 5: EMERGENCY CONTACTS ==================== -->
+    <section id="view-emergency" class="hidden fade-in max-w-4xl mx-auto">
+      <div class="pb-6 mb-6 border-b border-slate-200">
+        <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-phone-volume text-rose-500"></i> Đường Dây Nóng Cấp Cứu Tim Mạch Toàn Quốc
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+          Bấm gọi ngay lập tức khi xuất hiện triệu chứng đau tức ngực dữ dội kéo dài hoặc khó thở đột ngột.
+        </p>
+      </div>
+
+      <div class="space-y-4" id="emergency-contacts-container">
+        <!-- Rendered by JavaScript -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 6: DOCTOR CLINICAL DIAGNOSIS & XAI ==================== -->
+    <section id="view-doctor-diagnose" class="hidden fade-in">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Sidebar Inputs -->
+        <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+          <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-file-waveform text-sky-600"></i> Hồ Sơ Bệnh Án Lâm Sàng
+            </h2>
+            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded font-semibold">Nhập Dữ Liệu Thật</span>
+          </div>
+
+          <!-- Patient Name (Required for Doctor) -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên bệnh nhân:</label>
+            <input type="text" id="doc-patient-name" placeholder="Ví dụ: Nguyễn Văn A" value="Nguyễn Văn A" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-semibold">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Tuổi bệnh nhân:</label>
+              <input type="number" id="doc-age" value="50" min="18" max="95" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Giới tính:</label>
+              <select id="doc-gender" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white">
+                <option value="2">Nam</option>
+                <option value="1">Nữ</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Chiều cao (cm):</label>
+              <input type="number" id="doc-height" value="165" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Cân nặng (kg):</label>
+              <input type="number" id="doc-weight" value="72" step="0.5" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">HA Tâm thu (mmHg):</label>
+              <input type="number" id="doc-ap-hi" value="135" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-sky-700">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">HA Tâm trương (mmHg):</label>
+              <input type="number" id="doc-ap-lo" value="88" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-sky-700">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Cholesterol:</label>
+              <select id="doc-chol" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-xs bg-white font-medium">
+                <option value="1">1: Bình thường (< 5.2)</option>
+                <option value="2" selected>2: Hơi cao (5.2 - 6.2)</option>
+                <option value="3">3: Rất cao (> 6.2)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Glucose đói:</label>
+              <select id="doc-gluc" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-xs bg-white font-medium">
+                <option value="1" selected>1: Bình thường (< 5.6)</option>
+                <option value="2">2: Rối loạn (5.6 - 6.9)</option>
+                <option value="3">3: Đái tháo đường (≥ 7.0)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex gap-4 pt-2 text-xs">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="doc-smoke" class="rounded text-sky-600"> Hút thuốc
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="doc-alco" class="rounded text-sky-600"> Rượu bia
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="doc-active" checked class="rounded text-sky-600"> Vận động
+            </label>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex gap-2">
+            <button type="button" onclick="executeDoctorXAI()" class="flex-1 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm shadow transition active:scale-95 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-chart-pie"></i> Phân Tích XAI
+            </button>
+            <button type="button" onclick="saveDoctorCaseToRepo()" class="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow transition active:scale-95 flex items-center gap-1.5" title="Lưu vào Kho Lưu Trữ">
+              <i class="fa-solid fa-floppy-disk"></i> Lưu Hồ Sơ
+            </button>
+          </div>
+        </div>
+
+        <!-- Doctor XAI Analytics Output -->
+        <div class="lg:col-span-7 space-y-6">
+          <!-- 4 Quick Metric Cards -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="doc-metrics-row">
+            <!-- Rendered by JavaScript -->
+          </div>
+
+          <!-- XAI Factor Contributions -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+              <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-brain text-purple-600"></i> Phân Tích Đóng Góp Yếu Tố (Explainable AI - XAI)
+              </h3>
+              <span class="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full font-semibold">Cận biên SHAP</span>
+            </div>
+            <div id="doc-xai-factors-container" class="space-y-3">
+              <!-- Rendered by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Recommendation Protocol -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm" id="doc-protocol-container">
+            <!-- Rendered by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 7: DOCTOR HISTORY (ONLY SUBMITTED RECORDS BY PATIENT NAME) ==================== -->
+    <section id="view-doctor-history" class="hidden fade-in max-w-6xl mx-auto">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 mb-6 border-b border-slate-200">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-folder-tree text-sky-600"></i> Kho Lưu Trữ Bệnh Án (Dành Cho Bác Sĩ)
+          </h1>
+          <p class="text-sm text-slate-500 mt-1">
+            Chỉ lưu trữ các ca khám thật đã được submit. Quản lý theo <b>Tên Bệnh Nhân</b>, ngày khám và phân tầng rủi ro.
+          </p>
+        </div>
+        <div class="mt-4 sm:mt-0 flex gap-2">
+          <button onclick="switchNav('doctor-diagnose')" class="px-4 py-2 rounded-xl bg-sky-600 text-white font-semibold text-sm shadow hover:bg-sky-700 transition flex items-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-plus"></i> Khám Ca Mới
+          </button>
+        </div>
+      </div>
+
+      <!-- Real Records Table Container -->
+      <div id="doctor-records-container" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Injected dynamically from Database/LocalStorage -->
+      </div>
+    </section>
+
   </main>
 
   <!-- ARTICLE MODAL -->
   <div id="article-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 p-6 sm:p-8 relative">
-      <button onclick="closeArticleModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-2 text-xl">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 p-6 sm:p-8 relative fade-in" onclick="event.stopPropagation()">
+      <button onclick="closeArticleModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-2 text-xl transition">
         <i class="fa-solid fa-xmark"></i>
       </button>
-      <div id="modal-article-content">
-        <!-- Content injected dynamically -->
+      <div id="modal-article-body">
+        <!-- Rendered dynamically -->
       </div>
     </div>
   </div>
@@ -104,10 +522,10 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:flex sm:justify-between sm:items-center text-sm text-slate-500">
       <div class="flex items-center justify-center sm:justify-start gap-2 mb-4 sm:mb-0">
         <i class="fa-solid fa-heart-circle-check text-rose-500 text-lg"></i>
-        <span><b>CardioXAI</b> — Giải pháp Y tế Tim mạch Quốc gia</span>
+        <span><b>CardioCare AI</b> — Nền Tảng Chăm Sóc & Quản Lý Sức Khỏe Tim Mạch</span>
       </div>
       <div class="flex items-center justify-center space-x-6">
-        <span>Triển khai tự động trên <b>GitHub Pages</b></span>
+        <span>Triển khai chính thức trên <b>GitHub Pages</b></span>
         <a href="https://github.com/dhuy6728/cardio-xai-clinical-system" target="_blank" class="text-sky-600 hover:text-sky-800 font-medium flex items-center gap-1">
           <i class="fa-brands fa-github"></i> Repository
         </a>
@@ -115,12 +533,11 @@
     </div>
   </footer>
 
-  <!-- APPLICATION LOGIC SCRIPT -->
+  <!-- SCRIPT LOGIC -->
   <script>
-    // --- APP STATE ---
-    let currentRole = 'patient'; // 'patient' or 'doctor'
-    let currentTab = 'home';     // 'home', 'assessment', 'history', 'metrics', 'emergency', 'doctor-diagnose', 'doctor-history'
-    let selectedArticleId = null;
+    // --- STATE MANAGEMENT ---
+    let currentRole = 'patient';
+    let currentTab = 'home';
 
     // --- ARTICLES DATA ---
     const ARTICLES = [
@@ -276,7 +693,7 @@
       }
     ];
 
-    // --- STANDARD METRICS ---
+    // --- STANDARD METRICS DATA ---
     const STANDARD_METRICS = [
       { name: "Huyết áp lâm sàng (Blood Pressure)", unit: "mmHg", optimal: "< 120/80 mmHg", warning: "120-139 / 80-89 mmHg", danger: "≥ 140/90 mmHg", advice: "Đo vào buổi sáng sau khi ngủ dậy và nghỉ ngơi 5 phút." },
       { name: "Cholesterol toàn phần (Total Cholesterol)", unit: "mmol/L", optimal: "< 5.2 mmol/L", warning: "5.2 - 6.2 mmol/L", danger: "> 6.2 mmol/L", advice: "Xét nghiệm sau khi nhịn ăn ít nhất 8-10 tiếng." },
@@ -284,7 +701,7 @@
       { name: "Chỉ số khối cơ thể (BMI - Thể trạng)", unit: "kg/m²", optimal: "18.5 - 22.9 kg/m²", warning: "23.0 - 24.9 kg/m² (Thừa cân)", danger: "≥ 25.0 kg/m² (Béo phì)", advice: "Tính bằng Cân nặng (kg) chia cho bình phương Chiều cao (m)." }
     ];
 
-    // --- EMERGENCY CONTACTS ---
+    // --- EMERGENCY CONTACTS DATA ---
     const EMERGENCY_CONTACTS = [
       { name: "Tổng đài Cấp cứu Toàn quốc", phone: "115", desc: "Cấp cứu 24/7 khi có dấu hiệu nhồi máu cơ tim, đột quỵ" },
       { name: "Viện Tim Mạch Quốc Gia (BV Bạch Mai - Hà Nội)", phone: "024 3869 3731", desc: "Trung tâm can thiệp tim mạch hàng đầu miền Bắc" },
@@ -293,83 +710,45 @@
       { name: "BV Đại Học Y Dược TP.HCM", phone: "028 3855 4269", desc: "Chẩn đoán và điều trị tim mạch chuyên sâu" }
     ];
 
-    // --- KHO LƯU TRỮ (LOCAL STORAGE REPOSITORY) ---
-    function getRepoRecords() {
+    // --- REPOSITORY (LOCALSTORAGE) - ONLY GENUINELY SUBMITTED CASES ---
+    const REPO_KEY = 'cardiocare_submitted_records';
+
+    function getSubmittedRecords() {
       try {
-        const data = localStorage.getItem('cardioxai_records');
-        if (data) return JSON.parse(data);
-      } catch (e) {
-        console.error(e);
-      }
-      // Initial default records
-      const defaultRecords = [
-        {
-          id: 101,
-          roleType: 'doctor',
-          patientName: 'Trần Văn Cao',
-          date: '17/10/2026 14:30',
-          riskProb: 0.824,
-          riskLevel: 'NGUY CƠ CAO',
-          bp: '145/95',
-          bmi: 31.9,
-          chol: 3,
-          gluc: 2,
-          recommendation: 'Chỉ định ECG, siêu âm Doppler tim và phác đồ hạ huyết áp tích cực.'
-        },
-        {
-          id: 102,
-          roleType: 'doctor',
-          patientName: 'Lê Thị Thảo',
-          date: '16/10/2026 09:15',
-          riskProb: 0.082,
-          riskLevel: 'NGUY CƠ THẤP',
-          bp: '118/76',
-          bmi: 22.4,
-          chol: 1,
-          gluc: 1,
-          recommendation: 'Duy trì lối sống lành mạnh, ăn nhiều rau quả và khám định kỳ hàng năm.'
-        },
-        {
-          id: 103,
-          roleType: 'patient',
-          patientName: 'Bệnh nhân',
-          date: '18/10/2026 08:20',
-          riskProb: 0.285,
-          riskLevel: 'NGUY CƠ THẤP (AN TOÀN)',
-          bp: '122/80',
-          bmi: 23.1,
-          chol: 1,
-          gluc: 1,
-          recommendation: 'Trái tim trong dải bảo vệ tốt. Tiếp tục vận động 30 phút mỗi ngày.'
+        const raw = localStorage.getItem(REPO_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
         }
-      ];
-      localStorage.setItem('cardioxai_records', JSON.stringify(defaultRecords));
-      return defaultRecords;
+      } catch (e) {
+        console.error("Lỗi đọc dữ liệu Kho lưu trữ:", e);
+      }
+      return []; // KHÔNG có mẫu bệnh nhân ví dụ ảo! Chỉ có các ca thật đã submit.
     }
 
-    function saveRepoRecord(record) {
-      const records = getRepoRecords();
+    function addSubmittedRecord(record) {
+      const records = getSubmittedRecords();
       record.id = Date.now();
       records.unshift(record);
-      localStorage.setItem('cardioxai_records', JSON.stringify(records));
+      localStorage.setItem(REPO_KEY, JSON.stringify(records));
       return record;
     }
 
-    function deleteRepoRecord(id) {
-      let records = getRepoRecords();
+    function deleteSubmittedRecord(id) {
+      if (!confirm("Bạn có chắc chắn muốn xóa hồ sơ này khỏi Kho lưu trữ?")) return;
+      let records = getSubmittedRecords();
       records = records.filter(r => r.id !== id);
-      localStorage.setItem('cardioxai_records', JSON.stringify(records));
-      renderHistory();
+      localStorage.setItem(REPO_KEY, JSON.stringify(records));
+      showToast("Đã xóa hồ sơ khỏi Kho lưu trữ", "info");
+      renderRecordsInUI();
     }
 
-    // --- CARDIOVASCULAR AI PREDICTION ALGORITHM ---
-    function calculateCardioRisk(params) {
-      // params: { age, gender, height, weight, ap_hi, ap_lo, chol, gluc, smoke, alco, active }
+    // --- CARDIOVASCULAR AI INFERENCE FORMULA ---
+    function evaluateCardioRisk(params) {
       const bmi = params.weight / Math.pow(params.height / 100, 2);
-      
-      let z = -5.15; // base log-odds
+      let z = -5.15;
       z += (params.age - 30) * 0.056;
-      
+
       if (params.ap_hi > 140) {
         z += (params.ap_hi - 120) * 0.036 + 0.35;
       } else if (params.ap_hi > 120) {
@@ -401,45 +780,43 @@
       if (params.smoke === 1) z += 0.45;
       if (params.alco === 1) z += 0.15;
       if (params.active === 1) z -= 0.40;
-      if (params.gender === 2) z += 0.18; // Nam giới có xu hướng nguy cơ sớm hơn
+      if (params.gender === 2) z += 0.18;
 
-      const prob = 1 / (1 + Math.exp(-z));
-      const clampedProb = Math.min(Math.max(prob, 0.02), 0.98);
+      const prob = Math.min(Math.max(1 / (1 + Math.exp(-z)), 0.02), 0.98);
 
       let level = "NGUY CƠ THẤP";
       let color = "#16A34A";
       let badge = "badge-low";
       let advice = "";
 
-      if (clampedProb >= 0.65) {
+      if (prob >= 0.65) {
         level = "NGUY CƠ CAO";
         color = "#DC2626";
         badge = "badge-high";
-        advice = "Nguy cơ tim mạch đang ở mức cao. Các chỉ số cho thấy thành mạch máu và tim đang chịu áp lực lớn. Hãy đến khám chuyên khoa tim mạch sớm nhất để được đo điện tim (ECG), siêu âm tim và lập phác đồ kiểm soát.";
-      } else if (clampedProb >= 0.35) {
+        advice = "Nguy cơ tim mạch đang ở mức cao. Các chỉ số cho thấy thành mạch máu và tim đang chịu áp lực lớn. Bạn nên đến bệnh viện hoặc phòng khám chuyên khoa tim mạch sớm để được đo điện tim (ECG), siêu âm tim và lập phác đồ kiểm soát.";
+      } else if (prob >= 0.35) {
         level = "NGUY CƠ TRUNG BÌNH";
         color = "#D97706";
         badge = "badge-mod";
-        advice = "Bạn đang có các yếu tố nguy cơ tim mạch tiềm ẩn. Cần đo huyết áp định kỳ tại nhà 2 lần/tuần, giảm muối ăn, kiểm soát cân nặng và tập thể thao đều đặn 150 phút/tuần.";
+        advice = "Bạn đang có các yếu tố nguy cơ tim mạch tiềm ẩn. Cần đo huyết áp định kỳ tại nhà 2 lần/tuần, giảm lượng muối ăn, kiểm soát cân nặng và duy trì vận động thể thao 150 phút/tuần.";
       } else {
         level = "NGUY CƠ THẤP (AN TOÀN)";
         color = "#16A34A";
         badge = "badge-low";
-        advice = "Chúc mừng bạn! Trái tim của bạn hiện đang có các chỉ số nằm trong vùng bảo vệ an toàn. Tiếp tục duy trì chế độ dinh dưỡng lành mạnh, vận động thể chất thường xuyên và khám định kỳ hàng năm.";
+        advice = "Chúc mừng bạn! Trái tim của bạn hiện đang có các chỉ số nằm trong dải bảo vệ an toàn. Tiếp tục duy trì chế độ dinh dưỡng lành mạnh, ăn nhiều rau quả và khám sức khỏe định kỳ hàng năm.";
       }
 
-      // XAI Factor contributions
       const factors = [
-        { name: "Huyết áp tâm thu (" + params.ap_hi + " mmHg)", impact: params.ap_hi > 130 ? (params.ap_hi - 120) * 0.4 : -8, positive: params.ap_hi > 120 },
-        { name: "Mức Cholesterol (" + (params.chol === 1 ? 'Bình thường' : params.chol === 2 ? 'Hơi cao' : 'Rất cao') + ")", impact: params.chol === 3 ? 24 : params.chol === 2 ? 12 : -10, positive: params.chol > 1 },
-        { name: "Độ tuổi (" + params.age + " tuổi)", impact: (params.age - 35) * 0.5, positive: params.age > 45 },
-        { name: "Chỉ số Thể trạng BMI (" + bmi.toFixed(1) + " kg/m²)", impact: (bmi - 22) * 1.2, positive: bmi > 24 },
-        { name: "Thuốc lá (" + (params.smoke === 1 ? 'Có hút' : 'Không hút') + ")", impact: params.smoke === 1 ? 18 : -5, positive: params.smoke === 1 },
-        { name: "Vận động thể lực (" + (params.active === 1 ? 'Đều đặn' : 'Ít vận động') + ")", impact: params.active === 1 ? -15 : 12, positive: params.active === 0 }
+        { name: `Huyết áp tâm thu (${params.ap_hi} mmHg)`, impact: params.ap_hi > 120 ? (params.ap_hi - 120) * 0.4 : -8, isRisk: params.ap_hi > 120 },
+        { name: `Mức Cholesterol (${params.chol === 1 ? 'Bình thường' : params.chol === 2 ? 'Hơi cao' : 'Rất cao'})`, impact: params.chol === 3 ? 24 : params.chol === 2 ? 12 : -10, isRisk: params.chol > 1 },
+        { name: `Độ tuổi (${params.age} tuổi)`, impact: (params.age - 35) * 0.5, isRisk: params.age > 45 },
+        { name: `Chỉ số Thể trạng BMI (${bmi.toFixed(1)} kg/m²)`, impact: (bmi - 22) * 1.2, isRisk: bmi > 24 },
+        { name: `Thuốc lá (${params.smoke === 1 ? 'Có hút' : 'Không hút'})`, impact: params.smoke === 1 ? 18 : -5, isRisk: params.smoke === 1 },
+        { name: `Vận động (${params.active === 1 ? 'Đều đặn' : 'Ít vận động'})`, impact: params.active === 1 ? -15 : 12, isRisk: params.active === 0 }
       ];
 
       return {
-        prob: clampedProb,
+        prob: prob,
         level: level,
         color: color,
         badge: badge,
@@ -449,304 +826,280 @@
       };
     }
 
-    // --- NAVIGATION CONTROLLER ---
-    function setRole(role) {
+    // --- TOAST NOTIFICATION UTILS ---
+    let toastTimeout = null;
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast-notification');
+      const body = document.getElementById('toast-body');
+      const msg = document.getElementById('toast-message');
+      const icon = document.getElementById('toast-icon');
+
+      msg.innerText = message;
+      if (type === 'success') {
+        icon.className = "text-xl text-emerald-400";
+        icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+      } else if (type === 'info') {
+        icon.className = "text-xl text-sky-400";
+        icon.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+      } else {
+        icon.className = "text-xl text-amber-400";
+        icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+      }
+
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-120%]');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        hideToast();
+      }, 3500);
+    }
+
+    function hideToast() {
+      const toast = document.getElementById('toast-notification');
+      toast.classList.remove('opacity-100', 'translate-y-0');
+      toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-120%]');
+    }
+
+    // --- NAVIGATION LOGIC ---
+    function selectRole(role) {
       currentRole = role;
       const patientBtn = document.getElementById('role-patient-btn');
       const doctorBtn = document.getElementById('role-doctor-btn');
-      
+      const patientNavGroup = document.getElementById('patient-nav-group');
+      const doctorNavGroup = document.getElementById('doctor-nav-group');
+
       if (role === 'patient') {
         patientBtn.className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-sky-700";
         doctorBtn.className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900";
-        currentTab = 'home';
+        patientNavGroup.classList.remove('hidden');
+        doctorNavGroup.classList.add('hidden');
+        switchNav('home');
       } else {
         doctorBtn.className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-sky-700";
         patientBtn.className = "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900";
-        currentTab = 'doctor-diagnose';
+        doctorNavGroup.classList.remove('hidden');
+        patientNavGroup.classList.add('hidden');
+        switchNav('doctor-diagnose');
       }
-      renderNav();
-      renderContent();
     }
 
-    function renderNav() {
-      const container = document.getElementById('nav-container');
-      if (currentRole === 'patient') {
-        container.innerHTML = `
-          <button onclick="switchNav('home')" class="py-3 px-1 border-b-2 flex items-center gap-2 ${currentTab === 'home' ? 'border-sky-600 text-sky-600 font-bold' : 'border-transparent text-slate-600 hover:text-slate-900'}">
-            <i class="fa-solid fa-house"></i> Trang Chủ & Cẩm Nang
-          </button>
-          <button onclick="switchNav('assessment')" class="py-3 px-1 border-b-2 flex items-center gap-2 ${currentTab === 'assessment' ? 'border-sky-600 text-sky-600 font-bold' : 'border-transparent text-slate-600 hover:text-slate-900'}">
-            <i class="fa-solid fa-heart-pulse"></i> Chẩn Đoán Nguy Cơ
-          </button>
-          <button onclick="switchNav('history')" class="py-3 px-1 border-b-2 flex items-center gap-2 ${currentTab === 'history' ? 'border-sky-600 text-sky-600 font-bold' : 'border-transparent text-slate-600 hover:text-slate-900'}">
-            <i class="fa-solid fa-folder-closed"></i> Kho Lưu Trữ Sức Khỏe
-          </button>
-          <button onclick="switchNav('metrics')" class="py-3 px-1 border-b-2 flex items-center gap-2 ${currentTab === 'metrics' ? 'border-sky-600 text-sky-600 font-bold' : 'border-transparent text-slate-600 hover:text-slate-900'}">
-            <i class="fa-solid fa-chart-simple"></i> Bảng Chỉ Số Chuẩn
-          </button>
-          <button onclick="switchNav('emergency')" class="py-3 px-1 border-b-2 flex items-center gap-2 ${currentTab === 'emergency' ? 'border-sky-600 text-sky-600 font-bold' : 'border-transparent text-slate-600 hover:text-slate-900'}">
-            <i class="fa-solid fa-phone-volume text-rose-500"></i> Cấp Cứu 115
-          </button>
-        `;
-      } else {
-        container.innerHTML = `
-          <button onclick="switchNav('doctor-diagnose')" class="py-3 px-1 border-b-2 flex items-center gap-2 ${currentTab === 'doctor-diagnose' ? 'border-sky-600 text-sky-600 font-bold' : 'border-transparent text-slate-600 hover:text-slate-900'}">
-            <i class="fa-solid fa-stethoscope"></i> Khám Lâm Sàng & Phân Tích XAI
-          </button>
-          <button onclick="switchNav('doctor-history')" class="py-3 px-1 border-b-2 flex items-center gap-2 ${currentTab === 'doctor-history' ? 'border-sky-600 text-sky-600 font-bold' : 'border-transparent text-slate-600 hover:text-slate-900'}">
-            <i class="fa-solid fa-folder-tree"></i> Kho Lưu Trữ Bệnh Án
-          </button>
-          <button onclick="switchNav('home')" class="py-3 px-1 border-b-2 flex items-center gap-2 ${currentTab === 'home' ? 'border-sky-600 text-sky-600 font-bold' : 'border-transparent text-slate-600 hover:text-slate-900'}">
-            <i class="fa-solid fa-book-medical"></i> Cẩm Nang Hướng Dẫn
-          </button>
-        `;
-      }
-    }
+    const ALL_VIEWS = [
+      'view-home',
+      'view-assessment',
+      'view-history',
+      'view-metrics',
+      'view-emergency',
+      'view-doctor-diagnose',
+      'view-doctor-history'
+    ];
 
     function switchNav(tab) {
       currentTab = tab;
-      renderNav();
-      renderContent();
+
+      // Update Nav active classes
+      document.querySelectorAll('#patient-nav-group button, #doctor-nav-group button').forEach(btn => {
+        btn.classList.remove('border-sky-600', 'text-sky-600', 'font-bold');
+        btn.classList.add('border-transparent', 'text-slate-600');
+      });
+
+      const activeBtnId = tab === 'home' ? (currentRole === 'patient' ? 'nav-btn-home' : 'nav-btn-doctor-articles')
+                        : tab === 'assessment' ? 'nav-btn-assessment'
+                        : tab === 'history' ? 'nav-btn-history'
+                        : tab === 'metrics' ? 'nav-btn-metrics'
+                        : tab === 'emergency' ? 'nav-btn-emergency'
+                        : tab === 'doctor-diagnose' ? 'nav-btn-doctor-diagnose'
+                        : tab === 'doctor-history' ? 'nav-btn-doctor-history' : null;
+
+      if (activeBtnId) {
+        const activeBtn = document.getElementById(activeBtnId);
+        if (activeBtn) {
+          activeBtn.classList.remove('border-transparent', 'text-slate-600');
+          activeBtn.classList.add('border-sky-600', 'text-sky-600', 'font-bold');
+        }
+      }
+
+      // Hide all views, display the selected view
+      ALL_VIEWS.forEach(v => {
+        const el = document.getElementById(v);
+        if (el) el.classList.add('hidden');
+      });
+
+      const targetView = document.getElementById(`view-${tab}`);
+      if (targetView) {
+        targetView.classList.remove('hidden');
+      }
+
+      if (tab === 'history' || tab === 'doctor-history') {
+        renderRecordsInUI();
+      }
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // --- RENDER CONTENT VIEWS ---
-    function renderContent() {
-      const root = document.getElementById('app-root');
-      if (currentTab === 'home') {
-        renderHome(root);
-      } else if (currentTab === 'assessment') {
-        renderPatientAssessment(root);
-      } else if (currentTab === 'history') {
-        renderPatientHistory(root);
-      } else if (currentTab === 'metrics') {
-        renderMetrics(root);
-      } else if (currentTab === 'emergency') {
-        renderEmergency(root);
-      } else if (currentTab === 'doctor-diagnose') {
-        renderDoctorDiagnose(root);
-      } else if (currentTab === 'doctor-history') {
-        renderDoctorHistory(root);
-      }
-    }
+    // --- REAL RECORDS RENDERING (ONLY SUBMITTED ONES) ---
+    function renderRecordsInUI() {
+      const records = getSubmittedRecords();
 
-    // 1. PATIENT HOME PORTAL (ARTICLES & INSIGHTS)
-    function renderHome(root) {
-      root.innerHTML = `
-        <!-- Hero Banner -->
-        <div class="bg-gradient-to-r from-sky-600 via-sky-700 to-indigo-800 rounded-3xl p-6 sm:p-10 text-white shadow-xl mb-10 relative overflow-hidden">
-          <div class="relative z-10 max-w-3xl">
-            <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold mb-4 backdrop-blur-sm">
-              <i class="fa-solid fa-shield-heart mr-1.5"></i> Chăm Sóc Sức Khỏe Tim Mạch Toàn Diện
-            </span>
-            <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight mb-4 leading-tight">
-              Bảo Vệ Trái Tim Khỏe Mạnh, Chủ Động Phòng Ngừa Biến Cố
-            </h1>
-            <p class="text-sky-100 text-sm sm:text-base mb-6 leading-relaxed">
-              Trang thông tin & cẩm nang y khoa chính thống từ Hội Tim Mạch Việt Nam. Cung cấp kiến thức chuẩn xác về nguyên nhân, chế độ dinh dưỡng, lối sống và hệ thống tự đánh giá nguy cơ tim mạch ứng dụng trí tuệ nhân tạo.
-            </p>
-            <div class="flex flex-wrap gap-4">
-              <button onclick="switchNav('assessment')" class="px-6 py-3 rounded-xl bg-white text-sky-700 font-bold shadow-lg hover:bg-sky-50 transition flex items-center gap-2">
-                <i class="fa-solid fa-heart-pulse text-rose-500"></i> Đánh Giá Nguy Cơ Ngay
-              </button>
-              <button onclick="switchNav('emergency')" class="px-5 py-3 rounded-xl bg-sky-800/60 hover:bg-sky-800 text-white font-semibold backdrop-blur-sm transition flex items-center gap-2 border border-white/20">
-                <i class="fa-solid fa-phone text-rose-300"></i> Danh Bạ Khẩn Cấp 115
-              </button>
-            </div>
-          </div>
-          <div class="absolute right-0 bottom-0 opacity-10 text-white text-9xl transform translate-x-12 translate-y-8 select-none pointer-events-none">
-            <i class="fa-solid fa-heart-pulse"></i>
-          </div>
-        </div>
-
-        <!-- Section Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 pb-4 border-b border-slate-200">
-          <div>
-            <h2 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <i class="fa-solid fa-newspaper text-sky-600"></i> Cẩm Nang Sức Khỏe & Bài Báo Y Khoa
-            </h2>
-            <p class="text-sm text-slate-500 mt-1">Các bài viết chuyên sâu được kiểm duyệt bởi các bác sĩ tim mạch hàng đầu</p>
-          </div>
-          <div class="mt-4 sm:mt-0 flex gap-2">
-            <span class="text-xs bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium">6 Bài báo chuẩn y khoa</span>
-          </div>
-        </div>
-
-        <!-- Articles Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          ${ARTICLES.map(art => `
-            <div class="bg-white rounded-2xl border border-slate-200 hover:border-sky-300 hover:shadow-xl transition-all duration-200 flex flex-col p-6">
-              <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${art.badgeColor}">
-                  ${art.category}
-                </span>
-                <span class="text-xs text-slate-400 flex items-center gap-1">
-                  <i class="fa-regular fa-clock"></i> ${art.readTime}
-                </span>
+      // 1. Render Patient History
+      const patientContainer = document.getElementById('patient-records-container');
+      if (patientContainer) {
+        if (records.length === 0) {
+          patientContainer.innerHTML = `
+            <div class="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+              <div class="w-16 h-16 rounded-2xl bg-sky-50 text-sky-500 flex items-center justify-center mx-auto text-3xl mb-4">
+                <i class="fa-solid fa-folder-open"></i>
               </div>
-              <h3 class="text-lg font-bold text-slate-900 mb-2 leading-snug hover:text-sky-600 cursor-pointer transition" onclick="openArticleModal('${art.id}')">
-                ${art.title}
-              </h3>
-              <p class="text-sm text-slate-600 mb-4 line-clamp-3 leading-relaxed">
-                ${art.summary}
+              <h3 class="text-lg font-bold text-slate-800">Kho lưu trữ hiện chưa có dữ liệu</h3>
+              <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+                Hệ thống chỉ hiển thị những ca bệnh thực sự được xác nhận. Hãy thực hiện lượt tự đánh giá đầu tiên của bạn để lưu lại lịch sử theo dõi sức khỏe.
               </p>
-              <div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <span class="font-medium text-slate-700"><i class="fa-solid fa-user-doctor mr-1 text-sky-600"></i> ${art.author.split(' - ')[0]}</span>
-                <button onclick="openArticleModal('${art.id}')" class="text-sky-600 hover:text-sky-800 font-bold flex items-center gap-1">
-                  Đọc tiếp <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                </button>
-              </div>
+              <button onclick="switchNav('assessment')" class="mt-5 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold shadow transition active:scale-95">
+                <i class="fa-solid fa-heart-pulse mr-1"></i> Tự Đánh Giá Ngay
+              </button>
             </div>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    // 2. PATIENT SELF-ASSESSMENT (NO NAME REQUIRED)
-    function renderPatientAssessment(root) {
-      root.innerHTML = `
-        <div class="max-w-3xl mx-auto">
-          <!-- Header Banner -->
-          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-6">
-            <div class="flex items-start gap-4">
-              <div class="w-12 h-12 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl flex-shrink-0">
-                <i class="fa-solid fa-user-shield"></i>
-              </div>
-              <div>
-                <h1 class="text-xl font-bold text-slate-900">Tự Đánh Giá Nguy Cơ Tim Mạch Bằng AI</h1>
-                <p class="text-sm text-slate-500 mt-1 leading-relaxed">
-                  Hệ thống tự động sử dụng hồ sơ cá nhân của bạn để phân tích. <b>Không yêu cầu nhập họ và tên</b> nhằm bảo mật thông tin. Kết quả sẽ được tự động lưu vào <b>Kho lưu trữ sức khỏe</b> theo ngày và tình trạng nguy cơ.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Form Card -->
-          <form id="patient-form" onsubmit="handlePatientSubmit(event)" class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-            <!-- 1. Body metrics -->
-            <div>
-              <h3 class="text-base font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
-                <span class="w-6 h-6 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center">1</span>
-                Thông Số Thể Trạng
-              </h3>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1">Tuổi của bạn (năm):</label>
-                  <input type="number" id="p-age" min="18" max="95" value="48" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1">Giới tính sinh học:</label>
-                  <div class="flex gap-4 mt-1">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                      <input type="radio" name="p-gender" value="2" checked class="text-sky-600 focus:ring-sky-500"> Nam
-                    </label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer">
-                      <input type="radio" name="p-gender" value="1" class="text-sky-600 focus:ring-sky-500"> Nữ
-                    </label>
+          `;
+        } else {
+          patientContainer.innerHTML = records.map(rec => {
+            const isHigh = rec.riskProb >= 0.65 || (rec.riskLevel && rec.riskLevel.includes('CAO'));
+            const isMod = !isHigh && (rec.riskProb >= 0.35 || (rec.riskLevel && rec.riskLevel.includes('TRUNG')));
+            const badge = isHigh ? 'badge-high' : isMod ? 'badge-mod' : 'badge-low';
+            const borderColor = isHigh ? 'border-red-200' : isMod ? 'border-amber-200' : 'border-emerald-200';
+            return `
+              <div class="bg-white rounded-2xl border ${borderColor} p-5 sm:p-6 shadow-sm hover:shadow-md transition">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-lg">
+                      <i class="fa-regular fa-calendar-check"></i>
+                    </div>
+                    <div>
+                      <div class="text-sm font-bold text-slate-900">Ngày khám: ${rec.date}</div>
+                      <div class="text-xs text-slate-400">Kho Lưu Trữ An Toàn</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="px-3 py-1 rounded-full text-xs font-bold ${badge}">
+                      ${rec.riskLevel} (${(rec.riskProb * 100).toFixed(1)}%)
+                    </span>
+                    <button onclick="deleteSubmittedRecord(${rec.id})" title="Xóa bản ghi này" class="text-slate-300 hover:text-red-500 transition p-1">
+                      <i class="fa-solid fa-trash-can"></i>
+                    </button>
                   </div>
                 </div>
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1">Chiều cao (cm):</label>
-                  <input type="number" id="p-height" min="130" max="210" value="165" oninput="updatePatientBMI()" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3 bg-slate-50 p-3 rounded-xl">
+                  <div>
+                    <span class="text-slate-400">Huyết áp đo:</span>
+                    <div class="font-bold text-slate-800 text-sm mt-0.5">${rec.bp} mmHg</div>
+                  </div>
+                  <div>
+                    <span class="text-slate-400">Thể trạng BMI:</span>
+                    <div class="font-bold text-slate-800 text-sm mt-0.5">${rec.bmi} kg/m²</div>
+                  </div>
+                  <div>
+                    <span class="text-slate-400">Cholesterol:</span>
+                    <div class="font-bold text-slate-800 text-sm mt-0.5">Mức ${rec.chol || 1}</div>
+                  </div>
+                  <div>
+                    <span class="text-slate-400">Đường huyết:</span>
+                    <div class="font-bold text-slate-800 text-sm mt-0.5">Mức ${rec.gluc || 1}</div>
+                  </div>
                 </div>
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1">Cân nặng (kg):</label>
-                  <input type="number" id="p-weight" min="35" max="160" step="0.5" value="68" oninput="updatePatientBMI()" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
-                </div>
+                <p class="text-xs text-slate-600 bg-sky-50/50 p-3 rounded-lg border border-sky-100/50">
+                  <b>Lời khuyên chuyên môn:</b> ${rec.recommendation}
+                </p>
               </div>
-              <div class="mt-3 bg-sky-50 border border-sky-100 rounded-xl p-3 flex items-center justify-between text-xs">
-                <span class="text-slate-600 font-medium">Chỉ số thể trạng tính toán (BMI):</span>
-                <span id="p-bmi-display" class="font-bold text-sky-700 text-sm">24.98 kg/m² (Thừa cân nhẹ)</span>
+            `;
+          }).join('');
+        }
+      }
+
+      // 2. Render Doctor History
+      const doctorContainer = document.getElementById('doctor-records-container');
+      if (doctorContainer) {
+        if (records.length === 0) {
+          doctorContainer.innerHTML = `
+            <div class="text-center py-16 p-8">
+              <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-3xl mb-4">
+                <i class="fa-solid fa-folder-closed"></i>
               </div>
+              <h3 class="text-lg font-bold text-slate-800">Chưa có bệnh án nào trong Kho lưu trữ</h3>
+              <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+                Khi bác sĩ thực hiện hội chẩn và bấm "Lưu Hồ Sơ", thông tin bệnh án cùng phân tích XAI sẽ được lưu lại tại đây.
+              </p>
+              <button onclick="switchNav('doctor-diagnose')" class="mt-5 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold shadow transition active:scale-95">
+                <i class="fa-solid fa-stethoscope mr-1"></i> Khám Ca Mới
+              </button>
             </div>
-
-            <!-- 2. Blood pressure & Lab -->
-            <div>
-              <h3 class="text-base font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
-                <span class="w-6 h-6 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center">2</span>
-                Huyết Áp & Xét Nghiệm Máu (Nếu có)
-              </h3>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1">Huyết áp tối đa (Tâm thu - mmHg):</label>
-                  <input type="number" id="p-ap-hi" min="80" max="230" value="130" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
-                  <span class="text-[11px] text-slate-400">Số đo phía trên máy đo tại nhà</span>
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1">Huyết áp tối thiểu (Tâm trương - mmHg):</label>
-                  <input type="number" id="p-ap-lo" min="50" max="140" value="85" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
-                  <span class="text-[11px] text-slate-400">Số đo phía dưới máy đo tại nhà</span>
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1">Mức Cholesterol máu:</label>
-                  <select id="p-chol" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium bg-white">
-                    <option value="1">1: Bình thường (< 5.2 mmol/L)</option>
-                    <option value="2">2: Hơi cao / Ranh giới (5.2 - 6.2 mmol/L)</option>
-                    <option value="3">3: Rất cao (> 6.2 mmol/L)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 mb-1">Mức Đường huyết đói (Glucose):</label>
-                  <select id="p-gluc" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium bg-white">
-                    <option value="1">1: Bình thường (< 5.6 mmol/L)</option>
-                    <option value="2">2: Tiền đái tháo đường (5.6 - 6.9 mmol/L)</option>
-                    <option value="3">3: Đái tháo đường (≥ 7.0 mmol/L)</option>
-                  </select>
-                </div>
-              </div>
+          `;
+        } else {
+          doctorContainer.innerHTML = `
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+                    <th class="py-3.5 px-4">Tên Bệnh Nhân</th>
+                    <th class="py-3.5 px-4">Ngày Khám</th>
+                    <th class="py-3.5 px-4">Phân Tầng Rủi Ro</th>
+                    <th class="py-3.5 px-4">Huyết Áp</th>
+                    <th class="py-3.5 px-4">BMI</th>
+                    <th class="py-3.5 px-4">Khuyến Nghị & Phác Đồ</th>
+                    <th class="py-3.5 px-4 text-center">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${records.map(r => {
+                    const isHigh = r.riskProb >= 0.65 || (r.riskLevel && r.riskLevel.includes('CAO'));
+                    const isMod = !isHigh && (r.riskProb >= 0.35 || (r.riskLevel && r.riskLevel.includes('TRUNG')));
+                    const badge = isHigh ? 'badge-high' : isMod ? 'badge-mod' : 'badge-low';
+                    return `
+                      <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-4 font-bold text-slate-900">
+                          <i class="fa-solid fa-user-circle text-slate-400 mr-1.5"></i> ${r.patientName || 'Bệnh nhân'}
+                        </td>
+                        <td class="py-3 px-4 text-xs text-slate-500">${r.date}</td>
+                        <td class="py-3 px-4">
+                          <span class="px-2.5 py-1 rounded-full text-xs font-bold ${badge}">
+                            ${r.riskLevel} (${(r.riskProb * 100).toFixed(1)}%)
+                          </span>
+                        </td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">${r.bp}</td>
+                        <td class="py-3 px-4 font-semibold text-slate-800">${r.bmi}</td>
+                        <td class="py-3 px-4 text-xs text-slate-600 max-w-xs truncate" title="${r.recommendation}">
+                          ${r.recommendation}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                          <button onclick="deleteSubmittedRecord(${r.id})" class="text-slate-300 hover:text-red-500 transition p-1" title="Xóa bệnh án này">
+                            <i class="fa-solid fa-trash-can"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
             </div>
-
-            <!-- 3. Lifestyle habits -->
-            <div>
-              <h3 class="text-base font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
-                <span class="w-6 h-6 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center">3</span>
-                Thói Quen Sinh Hoạt
-              </h3>
-              <div class="space-y-3">
-                <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                  <input type="checkbox" id="p-smoke" class="w-4 h-4 text-sky-600 rounded">
-                  <span class="text-sm font-medium text-slate-700">Có hút thuốc lá (chủ động hoặc tiếp xúc thường xuyên)</span>
-                </label>
-                <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                  <input type="checkbox" id="p-alco" class="w-4 h-4 text-sky-600 rounded">
-                  <span class="text-sm font-medium text-slate-700">Có sử dụng bia, rượu hàng tuần</span>
-                </label>
-                <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                  <input type="checkbox" id="p-active" checked class="w-4 h-4 text-sky-600 rounded">
-                  <span class="text-sm font-medium text-slate-700">Có tập thể dục đều đặn (≥ 30 phút mỗi ngày)</span>
-                </label>
-              </div>
-            </div>
-
-            <button type="submit" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white font-bold text-base shadow-lg shadow-sky-500/20 transition flex items-center justify-center gap-2">
-              <i class="fa-solid fa-microchip"></i> ĐÁNH GIÁ NGUY CƠ & LƯU VÀO KHO LƯU TRỮ
-            </button>
-          </form>
-
-          <!-- Result Card (Hidden by default, shown after submit) -->
-          <div id="patient-result" class="mt-8 hidden">
-            <!-- Injected dynamically -->
-          </div>
-        </div>
-      `;
-      updatePatientBMI();
-    }
-
-    function updatePatientBMI() {
-      const h = parseFloat(document.getElementById('p-height')?.value || 165);
-      const w = parseFloat(document.getElementById('p-weight')?.value || 68);
-      const bmi = (w / Math.pow(h / 100, 2)).toFixed(2);
-      const display = document.getElementById('p-bmi-display');
-      if (display) {
-        let label = "Bình thường";
-        if (bmi < 18.5) label = "Thiếu cân";
-        else if (bmi >= 25.0) label = "Béo phì";
-        else if (bmi >= 23.0) label = "Thừa cân nhẹ";
-        display.innerText = `${bmi} kg/m² (${label})`;
+          `;
+        }
       }
     }
 
-    function handlePatientSubmit(e) {
+    // --- PATIENT FORM BMI CALC ---
+    function calcPatientBMI() {
+      const h = parseFloat(document.getElementById('p-height')?.value || 165);
+      const w = parseFloat(document.getElementById('p-weight')?.value || 68);
+      const badge = document.getElementById('p-bmi-badge');
+      if (h > 0 && w > 0 && badge) {
+        const bmi = (w / Math.pow(h / 100, 2)).toFixed(2);
+        let status = "Bình thường";
+        if (bmi < 18.5) status = "Thiếu cân";
+        else if (bmi >= 25.0) status = "Béo phì";
+        else if (bmi >= 23.0) status = "Thừa cân nhẹ";
+        badge.innerText = `${bmi} kg/m² (${status})`;
+      }
+    }
+
+    // --- PATIENT ASSESSMENT SUBMISSION ---
+    function submitPatientAssessment(e) {
       e.preventDefault();
       const params = {
         age: parseInt(document.getElementById('p-age').value),
@@ -762,413 +1115,95 @@
         active: document.getElementById('p-active').checked ? 1 : 0
       };
 
-      const result = calculateCardioRisk(params);
+      const res = evaluateCardioRisk(params);
 
-      // Auto save to Kho lưu trữ as Patient role (No name needed)
+      // Save genuinely to Kho lưu trữ
       const now = new Date();
       const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
-      saveRepoRecord({
+
+      addSubmittedRecord({
         roleType: 'patient',
         patientName: 'Bệnh nhân',
         date: dateFormatted,
-        riskProb: result.prob,
-        riskLevel: result.level,
+        riskProb: res.prob,
+        riskLevel: res.level,
         bp: `${params.ap_hi}/${params.ap_lo}`,
-        bmi: result.bmi,
+        bmi: res.bmi,
         chol: params.chol,
         gluc: params.gluc,
-        recommendation: result.advice
+        recommendation: res.advice
       });
 
-      // Show result
-      const resContainer = document.getElementById('patient-result');
-      resContainer.classList.remove('hidden');
-      resContainer.innerHTML = `
+      // Render Result Card
+      const resultBox = document.getElementById('patient-result-box');
+      resultBox.classList.remove('hidden');
+      resultBox.innerHTML = `
         <div class="bg-white rounded-2xl border-2 border-slate-200 p-6 sm:p-8 shadow-xl space-y-6">
           <div class="flex items-center justify-between border-b pb-4">
             <div>
-              <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Kết Quả Đánh Giá Sức Khỏe</span>
-              <h2 class="text-2xl font-extrabold text-slate-900 mt-1">Báo Cáo Tự Đánh Giá Nguy Cơ Tim Mạch</h2>
+              <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Kết Quả Phân Tích AI</span>
+              <h2 class="text-2xl font-extrabold text-slate-900 mt-0.5">Báo Cáo Sức Khỏe Tim Mạch</h2>
             </div>
-            <span class="px-4 py-1.5 rounded-full text-xs font-bold ${result.badge}">
-              ${result.level}
+            <span class="px-4 py-1.5 rounded-full text-xs font-bold ${res.badge}">
+              ${res.level}
             </span>
           </div>
 
-          <!-- Metric Cards -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-              <span class="text-xs font-semibold text-slate-500 uppercase">Điểm Rủi Ro AI</span>
-              <div class="text-3xl font-extrabold mt-1" style="color: ${result.color};">${(result.prob * 100).toFixed(1)}%</div>
-              <span class="text-xs text-slate-400">Dự báo theo mô hình Machine Learning</span>
+              <span class="text-xs font-semibold text-slate-500 uppercase">Điểm Nguy Cơ AI</span>
+              <div class="text-3xl font-extrabold mt-1" style="color: ${res.color};">${(res.prob * 100).toFixed(1)}%</div>
+              <span class="text-xs text-slate-400">Mô hình Gradient Boosting</span>
             </div>
             <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-              <span class="text-xs font-semibold text-slate-500 uppercase">Huyết Áp Đo</span>
+              <span class="text-xs font-semibold text-slate-500 uppercase">Huyết Áp Lâm Sàng</span>
               <div class="text-3xl font-extrabold text-slate-900 mt-1">${params.ap_hi}/${params.ap_lo} <span class="text-sm font-normal text-slate-500">mmHg</span></div>
               <span class="text-xs ${params.ap_hi >= 140 ? 'text-red-600 font-bold' : 'text-slate-400'}">${params.ap_hi >= 140 ? 'Huyết áp cao' : 'Mức bình thường'}</span>
             </div>
             <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <span class="text-xs font-semibold text-slate-500 uppercase">Thể Trạng BMI</span>
-              <div class="text-3xl font-extrabold text-slate-900 mt-1">${result.bmi} <span class="text-sm font-normal text-slate-500">kg/m²</span></div>
+              <div class="text-3xl font-extrabold text-slate-900 mt-1">${res.bmi} <span class="text-sm font-normal text-slate-500">kg/m²</span></div>
               <span class="text-xs text-slate-400">${params.weight}kg / ${params.height}cm</span>
             </div>
           </div>
 
-          <!-- Directive advice -->
-          <div class="p-5 rounded-xl border-l-4 ${result.prob >= 0.65 ? 'bg-red-50 border-red-500 text-red-900' : result.prob >= 0.35 ? 'bg-amber-50 border-amber-500 text-amber-900' : 'bg-emerald-50 border-emerald-500 text-emerald-900'}">
+          <div class="p-5 rounded-xl border-l-4 ${res.prob >= 0.65 ? 'bg-red-50 border-red-500 text-red-900' : res.prob >= 0.35 ? 'bg-amber-50 border-amber-500 text-amber-900' : 'bg-emerald-50 border-emerald-500 text-emerald-900'}">
             <h4 class="font-bold text-base mb-1.5 flex items-center gap-2">
               <i class="fa-solid fa-notes-medical"></i> Lời Khuyên Dành Riêng Cho Bạn:
             </h4>
-            <p class="text-sm leading-relaxed">${result.advice}</p>
+            <p class="text-sm leading-relaxed">${res.advice}</p>
           </div>
 
-          <!-- Notification -->
           <div class="flex items-center gap-3 bg-emerald-50 text-emerald-800 p-4 rounded-xl border border-emerald-200 text-sm">
             <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
             <div>
               <b>Đã tự động ghi nhận vào Kho lưu trữ sức khỏe của bạn!</b><br>
-              Lưu trữ an toàn theo <b>Ngày (${dateFormatted})</b> và <b>Tình trạng (${result.level})</b> mà không cần công khai danh tính.
+              Lưu trữ ngày <b>${dateFormatted}</b> với tình trạng <b>${res.level}</b> mà không cần công khai danh tính.
             </div>
           </div>
 
-          <div class="flex justify-end gap-3 pt-2">
-            <button onclick="switchNav('history')" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-semibold text-sm hover:bg-slate-800 transition">
+          <div class="flex justify-end pt-2">
+            <button onclick="switchNav('history')" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition active:scale-95">
               Xem trong Kho Lưu Trữ <i class="fa-solid fa-arrow-right ml-1"></i>
             </button>
           </div>
         </div>
       `;
-      resContainer.scrollIntoView({ behavior: 'smooth' });
+
+      showToast("Đã lưu kết quả vào Kho lưu trữ thành công!", "success");
+      resultBox.scrollIntoView({ behavior: 'smooth' });
     }
 
-    // 3. PATIENT KHO LƯU TRỮ (SAVED BY DATE & CONDITION ONLY)
-    function renderPatientHistory(root) {
-      const records = getRepoRecords();
-      root.innerHTML = `
-        <div class="max-w-5xl mx-auto">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 mb-6 border-b border-slate-200">
-            <div>
-              <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                <i class="fa-solid fa-folder-closed text-sky-600"></i> Kho Lưu Trữ Sức Khỏe
-              </h1>
-              <p class="text-sm text-slate-500 mt-1">
-                Nhật ký các lần chẩn đoán được lưu trữ bảo mật theo <b>Ngày tháng</b> và <b>Tình trạng</b>.
-              </p>
-            </div>
-            <div class="mt-4 sm:mt-0">
-              <button onclick="switchNav('assessment')" class="px-4 py-2 rounded-xl bg-sky-600 text-white font-semibold text-sm shadow hover:bg-sky-700 transition flex items-center gap-2">
-                <i class="fa-solid fa-plus"></i> Đánh Giá Mới
-              </button>
-            </div>
-          </div>
-
-          ${records.length === 0 ? `
-            <div class="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8">
-              <i class="fa-solid fa-inbox text-5xl text-slate-300 mb-3"></i>
-              <h3 class="text-lg font-bold text-slate-700">Chưa có kết quả nào trong Kho lưu trữ</h3>
-              <p class="text-sm text-slate-400 mt-1 max-w-md mx-auto">Hãy thực hiện tự đánh giá nguy cơ đầu tiên của bạn để theo dõi sức khỏe tim mạch theo thời gian.</p>
-              <button onclick="switchNav('assessment')" class="mt-4 px-5 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-bold shadow hover:bg-sky-700 transition">
-                Bắt đầu đánh giá
-              </button>
-            </div>
-          ` : `
-            <div class="space-y-4">
-              ${records.map(rec => {
-                const isHigh = rec.riskProb >= 0.65 || (rec.riskLevel && rec.riskLevel.includes('CAO'));
-                const isMod = !isHigh && (rec.riskProb >= 0.35 || (rec.riskLevel && rec.riskLevel.includes('TRUNG')));
-                const badge = isHigh ? 'badge-high' : isMod ? 'badge-mod' : 'badge-low';
-                const borderColor = isHigh ? 'border-red-200' : isMod ? 'border-amber-200' : 'border-emerald-200';
-                return `
-                  <div class="bg-white rounded-2xl border ${borderColor} p-5 sm:p-6 shadow-sm hover:shadow-md transition">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
-                      <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-lg">
-                          <i class="fa-regular fa-calendar-check"></i>
-                        </div>
-                        <div>
-                          <div class="text-sm font-bold text-slate-900">Ngày khám: ${rec.date}</div>
-                          <div class="text-xs text-slate-400">Lưu trữ an toàn tại máy của bạn</div>
-                        </div>
-                      </div>
-                      <div class="flex items-center gap-3">
-                        <span class="px-3.5 py-1 rounded-full text-xs font-bold ${badge}">
-                          ${rec.riskLevel} (${(rec.riskProb * 100).toFixed(1)}%)
-                        </span>
-                        <button onclick="deleteRepoRecord(${rec.id})" title="Xóa bản ghi" class="text-slate-300 hover:text-red-500 transition p-1">
-                          <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                      </div>
-                    </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3 bg-slate-50 p-3 rounded-xl">
-                      <div>
-                        <span class="text-slate-400">Huyết áp:</span>
-                        <div class="font-bold text-slate-800 text-sm">${rec.bp} mmHg</div>
-                      </div>
-                      <div>
-                        <span class="text-slate-400">Thể trạng BMI:</span>
-                        <div class="font-bold text-slate-800 text-sm">${rec.bmi} kg/m²</div>
-                      </div>
-                      <div>
-                        <span class="text-slate-400">Cholesterol:</span>
-                        <div class="font-bold text-slate-800 text-sm">Mức ${rec.chol || 1}</div>
-                      </div>
-                      <div>
-                        <span class="text-slate-400">Đường huyết:</span>
-                        <div class="font-bold text-slate-800 text-sm">Mức ${rec.gluc || 1}</div>
-                      </div>
-                    </div>
-                    <p class="text-xs text-slate-600 bg-sky-50/50 p-3 rounded-lg border border-sky-100/50">
-                      <b>Lời khuyên:</b> ${rec.recommendation}
-                    </p>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          `}
-        </div>
-      `;
-    }
-
-    // 4. STANDARD METRICS TABLE
-    function renderMetrics(root) {
-      root.innerHTML = `
-        <div class="max-w-4xl mx-auto">
-          <div class="pb-6 mb-6 border-b border-slate-200">
-            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <i class="fa-solid fa-chart-simple text-sky-600"></i> Bảng Chỉ Số Sức Khỏe Chuẩn Y Khoa
-            </h1>
-            <p class="text-sm text-slate-500 mt-1">
-              Đối chiếu nhanh các kết quả đo lường và xét nghiệm sinh hóa theo tiêu chuẩn của Hội Tim Mạch Việt Nam (VNHA) & Châu Âu (ESC).
-            </p>
-          </div>
-
-          <div class="space-y-4">
-            ${STANDARD_METRICS.map(m => `
-              <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                <div class="flex items-center justify-between mb-3">
-                  <h3 class="text-lg font-bold text-slate-900">${m.name}</h3>
-                  <span class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-700">Đơn vị: ${m.unit}</span>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 text-xs font-medium">
-                  <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl">
-                    <span class="font-bold text-emerald-700 block mb-1">✓ Mức Tối Ưu:</span>
-                    <span class="text-sm font-extrabold">${m.optimal}</span>
-                  </div>
-                  <div class="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl">
-                    <span class="font-bold text-amber-700 block mb-1">⚠️ Cần Chú Ý:</span>
-                    <span class="text-sm font-extrabold">${m.warning}</span>
-                  </div>
-                  <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded-xl">
-                    <span class="font-bold text-red-700 block mb-1">🚨 Nguy Hiểm:</span>
-                    <span class="text-sm font-extrabold">${m.danger}</span>
-                  </div>
-                </div>
-                <p class="text-xs text-slate-500 italic">
-                  <i class="fa-solid fa-circle-info mr-1 text-sky-600"></i> <b>Hướng dẫn đo:</b> ${m.advice}
-                </p>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    }
-
-    // 5. EMERGENCY CONTACTS
-    function renderEmergency(root) {
-      root.innerHTML = `
-        <div class="max-w-4xl mx-auto">
-          <div class="pb-6 mb-6 border-b border-slate-200">
-            <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <i class="fa-solid fa-phone-volume text-rose-500"></i> Đường Dây Nóng Cấp Cứu Tim Mạch Toàn Quốc
-            </h1>
-            <p class="text-sm text-slate-500 mt-1">
-              Hãy bấm gọi ngay khi người thân có triệu chứng đau ngực dữ dội, khó thở cấp tính hoặc ngất xỉu.
-            </p>
-          </div>
-
-          <div class="space-y-4">
-            ${EMERGENCY_CONTACTS.map(c => `
-              <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h3 class="text-lg font-bold text-slate-900">${c.name}</h3>
-                  <p class="text-sm text-slate-500 mt-1">${c.desc}</p>
-                </div>
-                <a href="tel:${c.phone.replace(/\\s/g, '')}" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-base shadow-md shadow-rose-500/20 transition flex-shrink-0">
-                  <i class="fa-solid fa-phone"></i> Gọi: ${c.phone}
-                </a>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    }
-
-    // 6. DOCTOR CLINICAL DIAGNOSE & EXPLAINABLE AI (XAI)
-    function renderDoctorDiagnose(root) {
-      root.innerHTML = `
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <!-- Sidebar Inputs -->
-          <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <i class="fa-solid fa-file-waveform text-sky-600"></i> Ca Lâm Sàng
-              </h2>
-              <select id="doc-preset" onchange="loadPresetCase()" class="text-xs font-semibold px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 outline-none">
-                <option value="custom">Tùy chỉnh (Nhập tự do)</option>
-                <option value="case1">Ca 1: Nguy cơ cao (51t, HA 145/95)</option>
-                <option value="case2">Ca 2: Người khỏe mạnh (32t, HA 118/76)</option>
-              </select>
-            </div>
-
-            <!-- Patient identification -->
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên bệnh nhân (Quản lý hồ sơ bác sĩ):</label>
-              <input type="text" id="doc-name" value="Nguyễn Văn A" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-semibold">
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1">Tuổi:</label>
-                <input type="number" id="doc-age" value="50" min="20" max="95" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm">
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1">Giới tính:</label>
-                <select id="doc-gender" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white">
-                  <option value="2">Nam</option>
-                  <option value="1">Nữ</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1">Chiều cao (cm):</label>
-                <input type="number" id="doc-height" value="165" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm">
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1">Cân nặng (kg):</label>
-                <input type="number" id="doc-weight" value="72" step="0.5" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1">HA Tâm thu (mmHg):</label>
-                <input type="number" id="doc-ap-hi" value="135" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-sky-700">
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1">HA Tâm trương (mmHg):</label>
-                <input type="number" id="doc-ap-lo" value="88" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-sky-700">
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1">Cholesterol:</label>
-                <select id="doc-chol" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-xs bg-white">
-                  <option value="1">1: < 5.2 mmol/L</option>
-                  <option value="2" selected>2: 5.2 - 6.2 mmol/L</option>
-                  <option value="3">3: > 6.2 mmol/L</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 mb-1">Glucose đói:</label>
-                <select id="doc-gluc" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-xs bg-white">
-                  <option value="1" selected>1: < 5.6 mmol/L</option>
-                  <option value="2">2: 5.6 - 6.9 mmol/L</option>
-                  <option value="3">3: ≥ 7.0 mmol/L</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="flex gap-4 pt-2 text-xs">
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" id="doc-smoke" class="rounded text-sky-600"> Hút thuốc
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" id="doc-alco" class="rounded text-sky-600"> Rượu bia
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" id="doc-active" checked class="rounded text-sky-600"> Vận động
-              </label>
-            </div>
-
-            <div class="pt-3 border-t border-slate-100 flex gap-2">
-              <button onclick="runDoctorAnalysis()" class="flex-1 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm shadow transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-chart-line"></i> Phân Tích XAI
-              </button>
-              <button onclick="saveDoctorCase()" class="px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm shadow transition flex items-center gap-1" title="Lưu vào Kho Lưu Trữ">
-                <i class="fa-solid fa-floppy-disk"></i> Lưu Hồ Sơ
-              </button>
-            </div>
-          </div>
-
-          <!-- Doctor XAI Analytics Output -->
-          <div class="lg:col-span-7 space-y-6">
-            <!-- Metric Cards -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="doc-metrics-grid">
-              <!-- Rendered via runDoctorAnalysis -->
-            </div>
-
-            <!-- XAI Explainability Waterfall Breakdown -->
-            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-              <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <i class="fa-solid fa-brain text-purple-600"></i> Phân Tích Đóng Góp Yếu Tố (Explainable AI - XAI)
-                </h3>
-                <span class="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full font-semibold">Tác động cận biên</span>
-              </div>
-              <div id="doc-xai-factors" class="space-y-3">
-                <!-- Rendered dynamically -->
-              </div>
-            </div>
-
-            <!-- Clinical Protocol & Recommendation -->
-            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm" id="doc-protocol-box">
-              <!-- Rendered dynamically -->
-            </div>
-          </div>
-        </div>
-      `;
-      runDoctorAnalysis();
-    }
-
-    function loadPresetCase() {
-      const preset = document.getElementById('doc-preset').value;
-      if (preset === 'case1') {
-        document.getElementById('doc-name').value = 'Trần Văn Cao';
-        document.getElementById('doc-age').value = '51';
-        document.getElementById('doc-gender').value = '2';
-        document.getElementById('doc-height').value = '168';
-        document.getElementById('doc-weight').value = '90';
-        document.getElementById('doc-ap-hi').value = '145';
-        document.getElementById('doc-ap-lo').value = '95';
-        document.getElementById('doc-chol').value = '3';
-        document.getElementById('doc-gluc').value = '2';
-        document.getElementById('doc-smoke').checked = true;
-        document.getElementById('doc-alco').checked = false;
-        document.getElementById('doc-active').checked = false;
-      } else if (preset === 'case2') {
-        document.getElementById('doc-name').value = 'Lê Thị Thảo';
-        document.getElementById('doc-age').value = '32';
-        document.getElementById('doc-gender').value = '1';
-        document.getElementById('doc-height').value = '165';
-        document.getElementById('doc-weight').value = '61';
-        document.getElementById('doc-ap-hi').value = '118';
-        document.getElementById('doc-ap-lo').value = '76';
-        document.getElementById('doc-chol').value = '1';
-        document.getElementById('doc-gluc').value = '1';
-        document.getElementById('doc-smoke').checked = false;
-        document.getElementById('doc-alco').checked = false;
-        document.getElementById('doc-active').checked = true;
-      }
-      runDoctorAnalysis();
-    }
-
-    function runDoctorAnalysis() {
-      const name = document.getElementById('doc-name')?.value || "Bệnh nhân";
+    // --- DOCTOR XAI EXECUTION ---
+    function executeDoctorXAI() {
+      const name = document.getElementById('doc-patient-name')?.value.trim() || "Bệnh nhân";
       const params = {
         age: parseInt(document.getElementById('doc-age')?.value || 50),
         gender: parseInt(document.getElementById('doc-gender')?.value || 2),
         height: parseFloat(document.getElementById('doc-height')?.value || 165),
         weight: parseFloat(document.getElementById('doc-weight')?.value || 72),
-        ap_hi: parseInt(document.getElementById('doc-ap-hi')?.value || 135),
-        ap_lo: parseInt(document.getElementById('doc-ap-lo')?.value || 88),
+        ap_hi: parseInt(document.getElementById('doc-ap_hi')?.value || 135),
+        ap_lo: parseInt(document.getElementById('doc-ap_lo')?.value || 88),
         chol: parseInt(document.getElementById('doc-chol')?.value || 2),
         gluc: parseInt(document.getElementById('doc-gluc')?.value || 1),
         smoke: document.getElementById('doc-smoke')?.checked ? 1 : 0,
@@ -1176,12 +1211,12 @@
         active: document.getElementById('doc-active')?.checked ? 1 : 0
       };
 
-      const res = calculateCardioRisk(params);
+      const res = evaluateCardioRisk(params);
 
       // Render 4 metrics
-      const grid = document.getElementById('doc-metrics-grid');
-      if (grid) {
-        grid.innerHTML = `
+      const metricsRow = document.getElementById('doc-metrics-row');
+      if (metricsRow) {
+        metricsRow.innerHTML = `
           <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <span class="text-[11px] font-bold uppercase text-slate-400">Xác Suất Tim Mạch</span>
             <div class="text-2xl font-extrabold mt-1" style="color: ${res.color};">${(res.prob * 100).toFixed(1)}%</div>
@@ -1208,10 +1243,10 @@
       }
 
       // Render XAI factor breakdown
-      const xaiBox = document.getElementById('doc-xai-factors');
-      if (xaiBox) {
-        xaiBox.innerHTML = res.factors.map(f => {
-          const isBad = f.positive && f.impact > 0;
+      const xaiContainer = document.getElementById('doc-xai-factors-container');
+      if (xaiContainer) {
+        xaiContainer.innerHTML = res.factors.map(f => {
+          const isBad = f.isRisk && f.impact > 0;
           const barColor = isBad ? 'bg-red-500' : 'bg-emerald-500';
           const textColor = isBad ? 'text-red-700' : 'text-emerald-700';
           const sign = f.impact > 0 ? '+' : '';
@@ -1230,10 +1265,10 @@
         }).join('');
       }
 
-      // Render Protocol box
-      const protBox = document.getElementById('doc-protocol-box');
-      if (protBox) {
-        protBox.innerHTML = `
+      // Render Protocol
+      const protContainer = document.getElementById('doc-protocol-container');
+      if (protContainer) {
+        protContainer.innerHTML = `
           <h3 class="text-base font-bold text-slate-900 flex items-center gap-2 mb-2">
             <i class="fa-solid fa-clipboard-check text-sky-600"></i> Khuyến Nghị & Phác Đồ Lâm Sàng Đề Xuất
           </h3>
@@ -1247,14 +1282,23 @@
           </p>
           <div class="text-xs text-slate-400 border-t pt-2 flex items-center justify-between">
             <span>Tiêu chuẩn khuyến cáo: <b>VNHA / ESC Guidelines 2024</b></span>
-            <span>Mã hồ sơ: <b>#CXA-${Math.floor(res.prob * 9999)}</b></span>
+            <span>Mã hồ sơ: <b>#CC-${Math.floor(res.prob * 9999)}</b></span>
           </div>
         `;
       }
+
+      showToast("Phân tích XAI hoàn tất!", "info");
     }
 
-    function saveDoctorCase() {
-      const name = document.getElementById('doc-name').value || "Bệnh nhân ẩn danh";
+    function saveDoctorCaseToRepo() {
+      const nameInput = document.getElementById('doc-patient-name');
+      const name = nameInput?.value.trim();
+      if (!name) {
+        showToast("Vui lòng nhập họ và tên bệnh nhân trước khi lưu!", "warning");
+        nameInput.focus();
+        return;
+      }
+
       const params = {
         age: parseInt(document.getElementById('doc-age').value),
         gender: parseInt(document.getElementById('doc-gender').value),
@@ -1269,11 +1313,11 @@
         active: document.getElementById('doc-active').checked ? 1 : 0
       };
 
-      const res = calculateCardioRisk(params);
+      const res = evaluateCardioRisk(params);
       const now = new Date();
       const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-      saveRepoRecord({
+      addSubmittedRecord({
         roleType: 'doctor',
         patientName: name,
         date: dateFormatted,
@@ -1286,87 +1330,44 @@
         recommendation: `Bác sĩ ghi nhận ca khám ${name}: ${res.level} (${(res.prob * 100).toFixed(1)}%). ${res.advice}`
       });
 
-      alert(`✅ Đã lưu hồ sơ bệnh nhân "${name}" vào Kho Lưu Trữ thành công!`);
+      showToast(`Đã lưu bệnh án cho "${name}" vào Kho lưu trữ thành công!`, "success");
     }
 
-    // 7. DOCTOR KHO LƯU TRỮ (SAVED WITH PATIENT NAME)
-    function renderDoctorHistory(root) {
-      const records = getRepoRecords();
-      root.innerHTML = `
-        <div class="max-w-6xl mx-auto">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-6 mb-6 border-b border-slate-200">
-            <div>
-              <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                <i class="fa-solid fa-folder-tree text-sky-600"></i> Kho Lưu Trữ Bệnh Án (Dành Cho Bác Sĩ)
-              </h1>
-              <p class="text-sm text-slate-500 mt-1">
-                Quản lý và tra cứu hồ sơ bệnh án theo <b>Tên Bệnh Nhân</b>, ngày khám và phân tầng rủi ro.
-              </p>
-            </div>
-            <div class="mt-4 sm:mt-0 flex gap-2">
-              <button onclick="switchNav('doctor-diagnose')" class="px-4 py-2 rounded-xl bg-sky-600 text-white font-semibold text-sm shadow hover:bg-sky-700 transition flex items-center gap-1.5">
-                <i class="fa-solid fa-plus"></i> Khám Ca Mới
-              </button>
-            </div>
+    // --- ARTICLES RENDERING & MODAL ---
+    function renderArticlesGrid() {
+      const container = document.getElementById('articles-grid');
+      if (!container) return;
+      container.innerHTML = ARTICLES.map(art => `
+        <div class="bg-white rounded-2xl border border-slate-200 hover:border-sky-300 hover:shadow-xl transition-all duration-200 flex flex-col p-6">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${art.badgeColor}">
+              ${art.category}
+            </span>
+            <span class="text-xs text-slate-400 flex items-center gap-1">
+              <i class="fa-regular fa-clock"></i> ${art.readTime}
+            </span>
           </div>
-
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse text-sm">
-                <thead>
-                  <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
-                    <th class="py-3 px-4">Tên Bệnh Nhân</th>
-                    <th class="py-3 px-4">Ngày Khám</th>
-                    <th class="py-3 px-4">Phân Tầng Rủi Ro</th>
-                    <th class="py-3 px-4">Huyết Áp</th>
-                    <th class="py-3 px-4">BMI</th>
-                    <th class="py-3 px-4">Khuyến Nghị Điều Trị</th>
-                    <th class="py-3 px-4 text-center">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                  ${records.map(r => {
-                    const isHigh = r.riskProb >= 0.65 || (r.riskLevel && r.riskLevel.includes('CAO'));
-                    const isMod = !isHigh && (r.riskProb >= 0.35 || (r.riskLevel && r.riskLevel.includes('TRUNG')));
-                    const badge = isHigh ? 'badge-high' : isMod ? 'badge-mod' : 'badge-low';
-                    return `
-                      <tr class="hover:bg-slate-50/80 transition">
-                        <td class="py-3 px-4 font-bold text-slate-900">
-                          <i class="fa-solid fa-user-circle text-slate-400 mr-1.5"></i> ${r.patientName || 'Bệnh nhân'}
-                        </td>
-                        <td class="py-3 px-4 text-xs text-slate-500">${r.date}</td>
-                        <td class="py-3 px-4">
-                          <span class="px-2.5 py-1 rounded-full text-xs font-bold ${badge}">
-                            ${r.riskLevel} (${(r.riskProb * 100).toFixed(1)}%)
-                          </span>
-                        </td>
-                        <td class="py-3 px-4 font-semibold text-slate-800">${r.bp}</td>
-                        <td class="py-3 px-4 font-semibold text-slate-800">${r.bmi}</td>
-                        <td class="py-3 px-4 text-xs text-slate-600 max-w-xs truncate" title="${r.recommendation}">
-                          ${r.recommendation}
-                        </td>
-                        <td class="py-3 px-4 text-center">
-                          <button onclick="deleteRepoRecord(${r.id})" class="text-slate-300 hover:text-red-500 transition p-1" title="Xóa hồ sơ">
-                            <i class="fa-solid fa-trash-can"></i>
-                          </button>
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-2 leading-snug hover:text-sky-600 cursor-pointer transition" onclick="openArticleModal('${art.id}')">
+            ${art.title}
+          </h3>
+          <p class="text-sm text-slate-600 mb-4 line-clamp-3 leading-relaxed">
+            ${art.summary}
+          </p>
+          <div class="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span class="font-medium text-slate-700"><i class="fa-solid fa-user-doctor mr-1 text-sky-600"></i> ${art.author.split(' - ')[0]}</span>
+            <button onclick="openArticleModal('${art.id}')" class="text-sky-600 hover:text-sky-800 font-bold flex items-center gap-1 active:scale-95">
+              Đọc tiếp <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </button>
           </div>
         </div>
-      `;
+      `).join('');
     }
 
-    // --- ARTICLE MODAL CONTROLLERS ---
     function openArticleModal(id) {
       const art = ARTICLES.find(a => a.id === id);
       if (!art) return;
       const modal = document.getElementById('article-modal');
-      const container = document.getElementById('modal-article-content');
+      const container = document.getElementById('modal-article-body');
       container.innerHTML = `
         <div class="flex items-center gap-2 mb-3">
           <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${art.badgeColor}">${art.category}</span>
@@ -1388,15 +1389,76 @@
         </div>
       `;
       modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
     }
 
     function closeArticleModal() {
       document.getElementById('article-modal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // Modal click-outside and Esc key handlers
+    document.getElementById('article-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'article-modal') closeArticleModal();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeArticleModal();
+    });
+
+    // --- STANDARD METRICS & EMERGENCY RENDERING ---
+    function renderStaticPages() {
+      const metContainer = document.getElementById('standard-metrics-container');
+      if (metContainer) {
+        metContainer.innerHTML = STANDARD_METRICS.map(m => `
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-bold text-slate-900">${m.name}</h3>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-700">Đơn vị: ${m.unit}</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 text-xs font-medium">
+              <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-3 rounded-xl">
+                <span class="font-bold text-emerald-700 block mb-1">✓ Mức Tối Ưu:</span>
+                <span class="text-sm font-extrabold">${m.optimal}</span>
+              </div>
+              <div class="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl">
+                <span class="font-bold text-amber-700 block mb-1">⚠️ Cần Chú Ý:</span>
+                <span class="text-sm font-extrabold">${m.warning}</span>
+              </div>
+              <div class="bg-red-50 border border-red-200 text-red-800 p-3 rounded-xl">
+                <span class="font-bold text-red-700 block mb-1">🚨 Nguy Hiểm:</span>
+                <span class="text-sm font-extrabold">${m.danger}</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-500 italic">
+              <i class="fa-solid fa-circle-info mr-1 text-sky-600"></i> <b>Hướng dẫn đo:</b> ${m.advice}
+            </p>
+          </div>
+        `).join('');
+      }
+
+      const emContainer = document.getElementById('emergency-contacts-container');
+      if (emContainer) {
+        emContainer.innerHTML = EMERGENCY_CONTACTS.map(c => `
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 class="text-lg font-bold text-slate-900">${c.name}</h3>
+              <p class="text-sm text-slate-500 mt-1">${c.desc}</p>
+            </div>
+            <a href="tel:${c.phone.replace(/\\s/g, '')}" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-base shadow-md shadow-rose-500/20 transition flex-shrink-0 active:scale-95">
+              <i class="fa-solid fa-phone"></i> Gọi: ${c.phone}
+            </a>
+          </div>
+        `).join('');
+      }
     }
 
     // --- INITIALIZE APPLICATION ---
     window.addEventListener('DOMContentLoaded', () => {
-      setRole('patient');
+      renderArticlesGrid();
+      renderStaticPages();
+      calcPatientBMI();
+      executeDoctorXAI();
+      selectRole('patient');
     });
   </script>
 </body>

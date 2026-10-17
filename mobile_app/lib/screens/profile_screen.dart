@@ -250,7 +250,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ListTile(
                     leading: Icon(Icons.info_outline, color: themeColor),
                     title: const Text('Phiên bản Ứng dụng', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('CardioXAI v1.2.0 (XGBoost + SHAP/LIME)', style: TextStyle(fontSize: 12)),
+                    subtitle: const Text('CardioCare AI v1.2.0 (XGBoost + SHAP/LIME)', style: TextStyle(fontSize: 12)),
                   ),
                 ],
               ),

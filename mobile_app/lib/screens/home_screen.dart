@@ -345,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(Icons.favorite, color: Colors.redAccent, size: 22),
             SizedBox(width: 8),
             Text(
-              "CardioXAI Sức Khỏe",
+              "CardioCare Sức Khỏe",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
             ),
           ],
