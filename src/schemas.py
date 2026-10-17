@@ -1,11 +1,52 @@
 """
 Pydantic Data Contracts & Schemas for FastAPI API Endpoints.
+Includes Auth, Profile, and Clinical Predictions.
 """
 
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
+# ==========================================
+# AUTH SCHEMAS
+# ==========================================
+class UserRegisterRequest(BaseModel):
+    email: str = Field(..., example="bacsi@benhvien.vn", description="Email đăng nhập")
+    password: str = Field(..., min_length=6, example="matkhau123", description="Mật khẩu ít nhất 6 ký tự")
+    full_name: str = Field(..., min_length=2, example="Nguyễn Văn A", description="Họ và tên")
+    phone: Optional[str] = Field(None, example="0901234567", description="Số điện thoại")
+    firebase_uid: Optional[str] = Field(None, description="Firebase User UID nếu liên kết")
+
+
+class UserLoginRequest(BaseModel):
+    email: str = Field(..., example="bacsi@benhvien.vn", description="Email đăng nhập")
+    password: str = Field(..., example="matkhau123", description="Mật khẩu")
+
+
+class ChangePasswordRequest(BaseModel):
+    email: str = Field(..., example="bacsi@benhvien.vn")
+    old_password: str = Field(..., description="Mật khẩu hiện tại")
+    new_password: str = Field(..., min_length=6, description="Mật khẩu mới (ít nhất 6 ký tự)")
+
+
+class UserResponse(BaseModel):
+    id: int
+    firebase_uid: str
+    email: str
+    full_name: str
+    role: str
+    phone: Optional[str] = None
+
+
+class AuthResponse(BaseModel):
+    status: str = "success"
+    message: str
+    user: UserResponse
+
+
+# ==========================================
+# CLINICAL SCHEMAS
+# ==========================================
 class PatientInput(BaseModel):
     """Patient biomedical features required for risk assessment."""
     age: float = Field(..., ge=18, le=100, description="Age in years", example=52.0)

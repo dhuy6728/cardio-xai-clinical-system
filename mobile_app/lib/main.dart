@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'screens/auth_screen.dart';
 import 'screens/assessment_screen.dart';
 import 'screens/history_screen.dart';
+import 'screens/profile_screen.dart';
 
 void main() {
   runApp(const CardioXaiApp());
@@ -14,8 +16,11 @@ class CardioXaiApp extends StatefulWidget {
 }
 
 class _CardioXaiAppState extends State<CardioXaiApp> {
-  // Default API host connecting to local FastAPI
+  // Mặc định kết nối tới máy chủ FastAPI
   String _apiHost = "http://10.0.2.2:8000";
+
+  // Thông tin người dùng sau khi đăng nhập (Firebase / Local Auth)
+  Map<String, dynamic>? _currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -24,51 +29,52 @@ class _CardioXaiAppState extends State<CardioXaiApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
+        fontFamily: 'Roboto',
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF0F4C81),
           primary: const Color(0xFF0F4C81),
-          secondary: const Color(0xFF00B4D8),
-          surface: const Color(0xFFF8FAFC),
+          secondary: const Color(0xFF0284C7),
+          surface: Colors.white,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF1F5F9),
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0F2027),
+          backgroundColor: Color(0xFF0F4C81),
           foregroundColor: Colors.white,
           elevation: 0,
-          centerTitle: false,
-        ),
-        cardTheme: CardTheme(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
-          ),
-          color: Colors.white,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
         ),
       ),
-      home: MainNavigation(
-        apiHost: _apiHost,
-        onHostChanged: (newHost) {
-          setState(() {
-            _apiHost = newHost;
-          });
-        },
-      ),
+      home: _currentUser == null
+          ? AuthScreen(
+              apiHost: _apiHost,
+              onAuthSuccess: (user) {
+                setState(() {
+                  _currentUser = user;
+                });
+              },
+            )
+          : MainNavigation(
+              user: _currentUser!,
+              apiHost: _apiHost,
+              onHostChanged: (newHost) => setState(() => _apiHost = newHost),
+              onLogout: () => setState(() => _currentUser = null),
+            ),
     );
   }
 }
 
 class MainNavigation extends StatefulWidget {
+  final Map<String, dynamic> user;
   final String apiHost;
   final ValueChanged<String> onHostChanged;
+  final VoidCallback onLogout;
 
-  const MainNavigation({Key? key, required this.apiHost, required this.onHostChanged}) : super(key: key);
+  const MainNavigation({
+    Key? key,
+    required this.user,
+    required this.apiHost,
+    required this.onHostChanged,
+    required this.onLogout,
+  }) : super(key: key);
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -77,106 +83,42 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  void _showSettingsDialog() {
-    final controller = TextEditingController(text: widget.apiHost);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Row(
-          children: const [
-            Icon(Icons.dns, color: Color(0xFF0F4C81)),
-            SizedBox(width: 8),
-            Text('Cài đặt Máy chủ (0đ)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Địa chỉ máy chủ FastAPI (RESTful API):',
-              style: TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: const Color(0xFFF8FAFC),
-                hintText: 'http://10.0.2.2:8000',
-                prefixIcon: const Icon(Icons.link, size: 20),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Hủy')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0F4C81),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () {
-              widget.onHostChanged(controller.text.trim());
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Đã cập nhật máy chủ: ${controller.text.trim()}'),
-                  backgroundColor: const Color(0xFF0F4C81),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            child: const Text('Lưu kết nối'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final screens = [
       AssessmentScreen(apiHost: widget.apiHost),
       HistoryScreen(apiHost: widget.apiHost),
+      ProfileScreen(
+        user: widget.user,
+        apiHost: widget.apiHost,
+        onLogout: widget.onLogout,
+      ),
     ];
 
     return Scaffold(
       body: screens[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2)),
-          ],
-        ),
-        child: NavigationBar(
-          backgroundColor: Colors.white,
-          indicatorColor: const Color(0xFF0F4C81).withOpacity(0.12),
-          selectedIndex: _currentIndex,
-          onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.favorite_border),
-              selectedIcon: Icon(Icons.favorite, color: Color(0xFF0F4C81)),
-              label: 'Khám & XAI',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.folder_outlined),
-              selectedIcon: Icon(Icons.folder_shared, color: Color(0xFF0F4C81)),
-              label: 'Hồ sơ SQL',
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.small(
-        onPressed: _showSettingsDialog,
-        backgroundColor: const Color(0xFF0F2027),
-        foregroundColor: Colors.white,
-        tooltip: 'Cài đặt kết nối Server',
-        child: const Icon(Icons.settings, size: 18),
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: Colors.white,
+        indicatorColor: const Color(0xFF0F4C81).withOpacity(0.12),
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.favorite_border),
+            selectedIcon: Icon(Icons.favorite, color: Color(0xFF0F4C81)),
+            label: 'Khám & XAI',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.folder_outlined),
+            selectedIcon: Icon(Icons.folder_shared, color: Color(0xFF0F4C81)),
+            label: 'Hồ sơ Bệnh',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person, color: Color(0xFF0F4C81)),
+            label: 'Cá nhân',
+          ),
+        ],
       ),
     );
   }

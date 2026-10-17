@@ -1,11 +1,12 @@
 """
 FastAPI Production Microservice for Cardiovascular Risk Prediction & Explainable AI.
 Engineered for mobile applications (Flutter / React Native), web clients, and clinical databases.
+Now includes full Authentication (Register, Login, Change Password, Firebase Sync).
 """
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import cloudpickle
 import joblib
@@ -28,25 +29,33 @@ from src.config import (
     TRAIN_DATA_FILE,
 )
 from src.database import (
+    authenticate_user,
     get_patient_history,
     get_record_with_xai,
+    register_user,
     save_patient_record,
+    update_user_password,
 )
 from src.explain import CLINICAL_FEATURE_LABELS
 from src.schemas import (
+    AuthResponse,
+    ChangePasswordRequest,
     FeatureContribution,
     FullAnalysisResponse,
     LimeRule,
     PatientInput,
     PredictionResult,
     ShapExplanationResponse,
+    UserLoginRequest,
+    UserRegisterRequest,
+    UserResponse,
 )
 
 # Initialize FastAPI app
 app = FastAPI(
     title="CardioXAI Clinical Decision Support API",
     description="RESTful Microservice providing Real-time Cardiovascular Disease Risk Prediction with SHAP & LIME XAI Explanations.",
-    version="1.0.0",
+    version="1.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -101,6 +110,64 @@ def startup_event():
         )
 
 
+# ==========================================
+# AUTHENTICATION ENDPOINTS (MOBILE / WEB)
+# ==========================================
+@app.post("/api/v1/auth/register", response_model=AuthResponse, tags=["Authentication & Firebase"])
+def auth_register(req: UserRegisterRequest):
+    """Registers a new patient or doctor account in SQL database (Firebase synced)."""
+    try:
+        user_data = register_user(
+            email=req.email,
+            password=req.password,
+            full_name=req.full_name,
+            firebase_uid=req.firebase_uid,
+            phone=req.phone,
+        )
+        return AuthResponse(
+            status="success",
+            message="Đăng ký tài khoản thành công!",
+            user=UserResponse(**user_data),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@app.post("/api/v1/auth/login", response_model=AuthResponse, tags=["Authentication & Firebase"])
+def auth_login(req: UserLoginRequest):
+    """Authenticates user credentials."""
+    user = authenticate_user(email=req.email, password=req.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email hoặc mật khẩu không chính xác!",
+        )
+    return AuthResponse(
+        status="success",
+        message="Đăng nhập thành công!",
+        user=UserResponse(**user),
+    )
+
+
+@app.post("/api/v1/auth/change-password", tags=["Authentication & Firebase"])
+def auth_change_password(req: ChangePasswordRequest):
+    """Changes password after verifying old password."""
+    success = update_user_password(
+        email=req.email,
+        old_password=req.old_password,
+        new_password=req.new_password,
+    )
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mật khẩu hiện tại không đúng hoặc email không tồn tại!",
+        )
+    return {"status": "success", "message": "Đổi mật khẩu thành công!"}
+
+
+# ==========================================
+# CLINICAL PREDICTION & EXPLAINABLE AI
+# ==========================================
 def _prepare_patient_dfs(patient: PatientInput) -> Tuple[pd.DataFrame, pd.DataFrame, float]:
     """Helper to compute BMI and return both unscaled and scaled patient feature vectors."""
     bmi = round(patient.weight / ((patient.height / 100.0) ** 2), 2)
@@ -140,100 +207,105 @@ def _get_clinical_recommendation(risk_prob: float, bmi: float, ap_hi: int) -> Tu
 
     if risk_prob >= 0.65:
         risk_level = "HIGH"
-        rec = "Nguy cơ tim mạch rất cao. Chỉ định khám chuyên khoa tim mạch, đo điện tâm đồ (ECG) và can thiệp hạ áp/hạ lipid máu ngay lập tức."
+        recommendation = (
+            f"Bệnh nhân thuộc nhóm NGUY CƠ CAO ({risk_prob:.1%}). Cần chỉ định khẩn: "
+            "Điện tâm đồ (ECG), siêu âm tim Doppler và kiểm soát huyết áp/statin tích cực."
+        )
     elif risk_prob >= 0.35:
         risk_level = "MODERATE"
-        rec = "Nguy cơ tim mạch trung bình. Khuyến cáo theo dõi huyết áp tại nhà 2 lần/ngày, giảm muối và điều chỉnh cân nặng."
+        recommendation = (
+            f"Bệnh nhân có NGUY CƠ TRUNG BÌNH ({risk_prob:.1%}). Khuyến nghị theo dõi "
+            "huyết áp lưu động định kỳ, xét nghiệm lipid máu 3 tháng/lần và điều chỉnh lối sống."
+        )
     else:
         risk_level = "LOW"
-        rec = "Nguy cơ tim mạch thấp. Duy trì chế độ ăn lành mạnh và tập luyện thể dục ít nhất 150 phút/tuần."
+        recommendation = (
+            f"Bệnh nhân thuộc nhóm NGUY CƠ THẤP ({risk_prob:.1%}). Khuyến khích duy trì "
+            "thói quen thể lực đều đặn và khám định kỳ mỗi 12 tháng."
+        )
 
-    return risk_level, bmi_cat, rec
+    return risk_level, bmi_cat, recommendation
 
 
 @app.get("/", tags=["System"])
 def root():
-    """Health check and API overview."""
     return {
-        "system": "CardioXAI Clinical Decision Support System",
-        "status": "ONLINE",
-        "model": "XGBoost (Optuna Tuned)",
-        "xai_frameworks": ["TreeSHAP", "LIME"],
+        "service": "CardioXAI Clinical Decision Support Microservice",
+        "status": "online",
+        "version": "1.1.0",
         "endpoints": {
-            "predict": "/api/v1/predict",
-            "explain_shap": "/api/v1/explain/shap",
-            "explain_lime": "/api/v1/explain/lime",
-            "full_analysis": "/api/v1/analyze",
-            "history": "/api/v1/records",
-            "interactive_docs": "/docs",
+            "docs": "/docs",
+            "auth_register": "POST /api/v1/auth/register",
+            "auth_login": "POST /api/v1/auth/login",
+            "auth_change_password": "POST /api/v1/auth/change-password",
+            "full_analysis": "POST /api/v1/analyze",
+            "clinical_records": "GET /api/v1/records",
         },
     }
 
 
 @app.post("/api/v1/predict", response_model=PredictionResult, tags=["Clinical AI"])
 def predict_cardio_risk(patient: PatientInput):
-    """
-    Sub-15ms real-time inference returning calibrated cardiovascular disease risk probability.
-    """
+    """Real-time Cardiovascular Risk Inference using Champion XGBoost model."""
     df_unscaled, df_scaled, bmi = _prepare_patient_dfs(patient)
-
-    prob = float(MODEL.predict_proba(df_scaled)[0, 1])
-    pred_class = int(prob >= 0.5)
-    risk_level, bmi_cat, rec = _get_clinical_recommendation(prob, bmi, patient.ap_hi)
+    risk_prob = float(MODEL.predict_proba(df_scaled)[0, 1])
+    risk_level, bmi_cat, recommendation = _get_clinical_recommendation(risk_prob, bmi, patient.ap_hi)
 
     return PredictionResult(
-        risk_probability=round(prob, 4),
-        risk_percentage=f"{prob:.1%}",
+        risk_probability=round(risk_prob, 4),
+        risk_percentage=f"{risk_prob:.1%}",
         risk_level=risk_level,
-        prediction=pred_class,
+        prediction=int(risk_prob >= 0.5),
         bmi=bmi,
         bmi_category=bmi_cat,
-        recommendation=rec,
+        recommendation=recommendation,
     )
 
 
 @app.post("/api/v1/explain/shap", response_model=ShapExplanationResponse, tags=["Explainable AI"])
 def explain_shap(patient: PatientInput):
-    """
-    Returns exact Shapley values and feature contributions for native mobile Waterfall charting.
-    """
+    """Calculates Shapley additive feature attributions."""
     df_unscaled, df_scaled, _ = _prepare_patient_dfs(patient)
-
     shap_vals = SHAP_EXPLAINER(df_scaled)
+
     base_val = float(shap_vals.base_values[0])
-    values = shap_vals.values[0]
+    pred_val = float(shap_vals.values[0].sum() + base_val)
 
     contributions = []
-    for col, shap_v in zip(df_scaled.columns, values):
-        actual_v = float(df_unscaled[col].iloc[0])
-        display_label = CLINICAL_FEATURE_LABELS.get(col, col)
+    for col in df_scaled.columns:
+        val_shap = float(shap_vals.values[0][df_scaled.columns.get_loc(col)])
+        actual_val = float(df_unscaled[col].iloc[0])
+        display_name = CLINICAL_FEATURE_LABELS.get(col, col)
 
-        impact = "INCREASES_RISK" if shap_v > 0.05 else ("PROTECTIVE" if shap_v < -0.05 else "NEUTRAL")
+        if val_shap > 0.05:
+            impact = "INCREASES_RISK"
+        elif val_shap < -0.05:
+            impact = "PROTECTIVE"
+        else:
+            impact = "NEUTRAL"
+
         contributions.append(
             FeatureContribution(
                 feature=col,
-                display_name=display_label,
-                actual_value=actual_v,
-                shap_value=round(float(shap_v), 4),
+                display_name=display_name,
+                actual_value=actual_val,
+                shap_value=round(val_shap, 4),
                 impact=impact,
             )
         )
 
-    # Sort descending by absolute SHAP impact
     contributions.sort(key=lambda x: abs(x.shap_value), reverse=True)
 
     return ShapExplanationResponse(
         base_value=round(base_val, 4),
-        prediction_value=round(float(base_val + sum(values)), 4),
+        prediction_value=round(pred_val, 4),
         contributions=contributions,
     )
 
 
 @app.post("/api/v1/explain/lime", response_model=List[LimeRule], tags=["Explainable AI"])
-def explain_lime(patient: PatientInput, num_features: int = 8):
-    """
-    Returns discrete local decision rules extracted by LIME surrogate modeling.
-    """
+def explain_lime(patient: PatientInput, num_features: int = Query(6, ge=3, le=12)):
+    """Computes Local Interpretable Model-agnostic Explanations."""
     _, df_scaled, _ = _prepare_patient_dfs(patient)
 
     exp = LIME_EXPLAINER.explain_instance(
@@ -259,20 +331,11 @@ def explain_lime(patient: PatientInput, num_features: int = 8):
 
 @app.post("/api/v1/analyze", response_model=FullAnalysisResponse, tags=["Mobile One-Shot API"])
 def full_patient_analysis(patient: PatientInput, save_to_db: bool = True):
-    """
-    Combined endpoint performing Prediction + SHAP + LIME and persisting the record to the SQL database.
-    Ideal for mobile apps to conserve network bandwidth and battery.
-    """
-    # 1. Prediction
+    """Combined endpoint for Prediction + SHAP + LIME and persistence to SQL database."""
     pred_res = predict_cardio_risk(patient)
-
-    # 2. SHAP
     shap_res = explain_shap(patient)
-
-    # 3. LIME
     lime_res = explain_lime(patient, num_features=8)
 
-    # 4. Save to SQL Database
     record_id = None
     if save_to_db:
         raw_dict = patient.model_dump() if hasattr(patient, "model_dump") else patient.dict()
@@ -298,7 +361,7 @@ def full_patient_analysis(patient: PatientInput, save_to_db: bool = True):
 
 @app.get("/api/v1/records", tags=["Clinical Database"])
 def list_records(user_id: Optional[int] = None, limit: int = Query(50, ge=1, le=200)):
-    """Retrieves patient historical records from SQL database for time-series longitudinal tracking."""
+    """Retrieves patient historical records from SQL database."""
     return get_patient_history(user_id=user_id, limit=limit)
 
 

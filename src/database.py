@@ -1,11 +1,13 @@
 """
 SQL Database Management Layer for CardioXAI.
-Supports local SQLite (zero-cost, zero-configuration) and cloud PostgreSQL (Supabase / Neon).
+Supports local SQLite (zero-cost, zero-configuration) and cloud PostgreSQL (Supabase / Neon / Firebase sync).
 """
 
+import hashlib
 import json
 import os
 import sqlite3
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -13,6 +15,12 @@ from typing import Any, Dict, List, Optional
 # Database file location for zero-cost local storage
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_FILE = BASE_DIR / "data" / "cardioxai.db"
+
+
+def _hash_password(password: str) -> str:
+    """Zero-cost SHA-256 salted password hashing."""
+    salt = "cardio_xai_clinical_salt_2026"
+    return hashlib.sha256((password + salt).encode("utf-8")).hexdigest()
 
 
 def get_connection() -> sqlite3.Connection:
@@ -28,14 +36,16 @@ def init_db() -> None:
     conn = get_connection()
     cursor = conn.cursor()
 
-    # 1. Users table (linked with Firebase UID)
+    # 1. Users table (linked with Firebase UID / Local Auth)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         firebase_uid TEXT UNIQUE,
-        email TEXT,
+        email TEXT UNIQUE,
+        password_hash TEXT,
         full_name TEXT,
         role TEXT DEFAULT 'patient', -- 'patient' or 'doctor'
+        phone TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
@@ -82,6 +92,92 @@ def init_db() -> None:
     conn.close()
 
 
+# ==========================================
+# AUTHENTICATION & USER MANAGEMENT
+# ==========================================
+def register_user(
+    email: str,
+    password: str,
+    full_name: str,
+    firebase_uid: Optional[str] = None,
+    phone: Optional[str] = None,
+    role: str = "patient",
+) -> Dict[str, Any]:
+    """Registers a new user into SQL database (supports Firebase sync)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    email_clean = email.strip().lower()
+    cursor.execute("SELECT id FROM users WHERE email = ?", (email_clean,))
+    if cursor.fetchone():
+        conn.close()
+        raise ValueError("Email này đã được đăng ký trong hệ thống!")
+
+    uid = firebase_uid or f"fb_{uuid.uuid4().hex[:16]}"
+    pwd_hash = _hash_password(password)
+
+    cursor.execute("""
+    INSERT INTO users (firebase_uid, email, password_hash, full_name, role, phone)
+    VALUES (?, ?, ?, ?, ?, ?)
+    """, (uid, email_clean, pwd_hash, full_name.strip(), role, phone))
+
+    user_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return {
+        "id": user_id,
+        "firebase_uid": uid,
+        "email": email_clean,
+        "full_name": full_name.strip(),
+        "role": role,
+    }
+
+
+def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
+    """Authenticates email and password against local SQL database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    email_clean = email.strip().lower()
+    pwd_hash = _hash_password(password)
+
+    cursor.execute(
+        "SELECT id, firebase_uid, email, full_name, role, phone, created_at FROM users WHERE email = ? AND password_hash = ?",
+        (email_clean, pwd_hash),
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return dict(row)
+    return None
+
+
+def update_user_password(email: str, old_password: str, new_password: str) -> bool:
+    """Updates password verifying the previous password."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    email_clean = email.strip().lower()
+    old_hash = _hash_password(old_password)
+    new_hash = _hash_password(new_password)
+
+    cursor.execute("SELECT id FROM users WHERE email = ? AND password_hash = ?", (email_clean, old_hash))
+    user = cursor.fetchone()
+    if not user:
+        conn.close()
+        return False
+
+    cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_hash, user["id"]))
+    conn.commit()
+    conn.close()
+    return True
+
+
+# ==========================================
+# CLINICAL RECORDS MANAGEMENT
+# ==========================================
 def save_patient_record(
     patient_data: Dict[str, Any],
     risk_prob: float,
@@ -124,7 +220,6 @@ def save_patient_record(
 
     record_id = cursor.lastrowid
 
-    # Save XAI Audit Log if provided
     if shap_data or lime_data:
         cursor.execute("""
         INSERT INTO xai_audit_logs (record_id, shap_values_json, lime_rules_json)
@@ -140,7 +235,6 @@ def save_patient_record(
     return record_id
 
 
-# Aliases for compatibility
 def save_assessment(
     patient_name: str,
     patient_data: Dict[str, Any],
@@ -149,6 +243,7 @@ def save_assessment(
     recommendation: str,
     shap_data: Optional[Dict[str, Any]] = None,
     lime_data: Optional[List[Dict[str, Any]]] = None,
+    user_id: Optional[int] = None,
 ) -> int:
     """Convenience wrapper for save_patient_record."""
     return save_patient_record(
@@ -158,6 +253,7 @@ def save_assessment(
         recommendation=recommendation,
         shap_data=shap_data,
         lime_data=lime_data,
+        user_id=user_id,
         patient_name=patient_name,
     )
 
