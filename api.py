@@ -138,17 +138,18 @@ def auth_register(req: UserRegisterRequest):
 @app.post("/api/v1/auth/login", response_model=AuthResponse, tags=["Authentication & Firebase"])
 def auth_login(req: UserLoginRequest):
     """Authenticates user credentials."""
-    user = authenticate_user(email=req.email, password=req.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email hoặc mật khẩu không chính xác!",
+    try:
+        user = authenticate_user(identifier=req.email, password=req.password)
+        return AuthResponse(
+            status="success",
+            message="Đăng nhập thành công!",
+            user=UserResponse(**user),
         )
-    return AuthResponse(
-        status="success",
-        message="Đăng nhập thành công!",
-        user=UserResponse(**user),
-    )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @app.post("/api/v1/auth/change-password", tags=["Authentication & Firebase"])

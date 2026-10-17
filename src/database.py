@@ -96,9 +96,9 @@ def init_db() -> None:
 # AUTHENTICATION & USER MANAGEMENT
 # ==========================================
 def register_user(
-    email: str,
-    password: str,
-    full_name: str,
+    email: Optional[str] = None,
+    password: str = "",
+    full_name: str = "",
     firebase_uid: Optional[str] = None,
     phone: Optional[str] = None,
     role: str = "patient",
@@ -107,11 +107,24 @@ def register_user(
     conn = get_connection()
     cursor = conn.cursor()
 
-    email_clean = email.strip().lower()
-    cursor.execute("SELECT id FROM users WHERE email = ?", (email_clean,))
-    if cursor.fetchone():
-        conn.close()
-        raise ValueError("Email này đã được đăng ký trong hệ thống!")
+    email_clean = (email or "").strip().lower()
+    phone_clean = (phone or "").strip()
+
+    # If no email provided, create a placeholder from phone
+    if not email_clean and phone_clean:
+        email_clean = f"{phone_clean}@cardiocare.vn"
+
+    if email_clean and not email_clean.endswith('@cardiocare.vn'):
+        cursor.execute("SELECT id FROM users WHERE email = ?", (email_clean,))
+        if cursor.fetchone():
+            conn.close()
+            raise ValueError("Email này đã tồn tại trong hệ thống! Vui lòng đăng nhập hoặc chọn email khác.")
+
+    if phone_clean:
+        cursor.execute("SELECT id FROM users WHERE phone = ?", (phone_clean,))
+        if cursor.fetchone():
+            conn.close()
+            raise ValueError("Số điện thoại này đã tồn tại trong hệ thống! Vui lòng đăng nhập hoặc chọn số khác.")
 
     uid = firebase_uid or f"fb_{uuid.uuid4().hex[:16]}"
     pwd_hash = _hash_password(password)
@@ -119,7 +132,7 @@ def register_user(
     cursor.execute("""
     INSERT INTO users (firebase_uid, email, password_hash, full_name, role, phone)
     VALUES (?, ?, ?, ?, ?, ?)
-    """, (uid, email_clean, pwd_hash, full_name.strip(), role, phone))
+    """, (uid, email_clean, pwd_hash, full_name.strip(), role, phone_clean or None))
 
     user_id = cursor.lastrowid
     conn.commit()
@@ -130,28 +143,38 @@ def register_user(
         "firebase_uid": uid,
         "email": email_clean,
         "full_name": full_name.strip(),
+        "phone": phone_clean,
         "role": role,
     }
 
 
-def authenticate_user(email: str, password: str) -> Optional[Dict[str, Any]]:
-    """Authenticates email and password against local SQL database."""
+def authenticate_user(identifier: str, password: str) -> Dict[str, Any]:
+    """Authenticates email or phone against local SQL database with precise feedback."""
     conn = get_connection()
     cursor = conn.cursor()
 
-    email_clean = email.strip().lower()
-    pwd_hash = _hash_password(password)
+    ident_clean = identifier.strip().lower()
 
+    # Check if account exists first
     cursor.execute(
-        "SELECT id, firebase_uid, email, full_name, role, phone, created_at FROM users WHERE email = ? AND password_hash = ?",
-        (email_clean, pwd_hash),
+        "SELECT id, firebase_uid, email, password_hash, full_name, role, phone, created_at FROM users WHERE email = ? OR phone = ?",
+        (ident_clean, ident_clean),
     )
     row = cursor.fetchone()
     conn.close()
 
-    if row:
-        return dict(row)
-    return None
+    if not row:
+        raise ValueError("Tài khoản chưa được đăng ký trong hệ thống! Vui lòng kiểm tra lại hoặc đăng ký tài khoản mới.")
+
+    user_dict = dict(row)
+    pwd_hash = _hash_password(password)
+
+    if user_dict["password_hash"] != pwd_hash:
+        raise ValueError("Mật khẩu không chính xác! Vui lòng kiểm tra lại.")
+
+    # Remove password_hash before returning
+    user_dict.pop("password_hash", None)
+    return user_dict
 
 
 def update_user_password(email: str, old_password: str, new_password: str) -> bool:

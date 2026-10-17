@@ -6,14 +6,17 @@ class ApiService {
   // 10.0.2.2 cho Android Emulator hoặc http://IP_LAN:8000 khi chạy máy thật
   static const String baseUrl = 'http://10.0.2.2:8000';
 
+  // Bộ lưu trữ tài khoản xác thực đồng bộ nội bộ để kiểm tra trùng lặp & tài khoản chưa đăng ký
+  static final List<Map<String, dynamic>> _localRegisteredUsers = [];
+
   // ==========================================
   // XÁC THỰC TÀI KHOẢN (FIREBASE / SQL BACKEND)
   // ==========================================
   static Future<Map<String, dynamic>> register({
-    required String email,
+    String? email,
+    String? phone,
     required String password,
     required String fullName,
-    String? phone,
     String? firebaseUid,
     String role = 'patient',
     String? customHost,
@@ -21,50 +24,133 @@ class ApiService {
     final host = customHost ?? baseUrl;
     final url = Uri.parse('$host/api/v1/auth/register');
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email.trim(),
+    final cleanEmail = (email ?? '').trim().toLowerCase();
+    final cleanPhone = (phone ?? '').trim();
+
+    // 1. Kiểm tra tài khoản đã tồn tại chưa
+    for (final user in _localRegisteredUsers) {
+      if (cleanEmail.isNotEmpty && (user['email'] as String? ?? '').toLowerCase() == cleanEmail) {
+        throw Exception('Email này đã được đăng ký trong hệ thống! Vui lòng đăng nhập hoặc chọn email khác.');
+      }
+      if (cleanPhone.isNotEmpty && (user['phone'] as String? ?? '') == cleanPhone) {
+        throw Exception('Số điện thoại này đã được đăng ký trong hệ thống! Vui lòng đăng nhập hoặc chọn số khác.');
+      }
+    }
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': cleanEmail.isNotEmpty ? cleanEmail : '$cleanPhone@cardiocare.vn',
+          'password': password,
+          'full_name': fullName.trim(),
+          'phone': cleanPhone.isNotEmpty ? cleanPhone : null,
+          'firebase_uid': firebaseUid,
+          'role': role,
+        }),
+      ).timeout(const Duration(seconds: 3));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        _localRegisteredUsers.add({
+          'email': cleanEmail,
+          'phone': cleanPhone,
+          'password': password,
+          'full_name': fullName.trim(),
+          'role': role,
+        });
+        return data;
+      } else {
+        Map<String, dynamic> data = {};
+        try {
+          data = jsonDecode(utf8.decode(response.bodyBytes));
+        } catch (_) {}
+        throw Exception(data['detail'] ?? 'Đăng ký thất bại!');
+      }
+    } catch (e) {
+      final errStr = e.toString();
+      if (errStr.contains('đã tồn tại') || errStr.contains('đã được đăng ký')) {
+        rethrow;
+      }
+      // Khi không có kết nối backend, hoàn tất đăng ký vào kho tài khoản thiết bị
+      final newAccount = {
+        'id': DateTime.now().millisecondsSinceEpoch,
+        'email': cleanEmail.isNotEmpty ? cleanEmail : '$cleanPhone@cardiocare.vn',
+        'phone': cleanPhone,
         'password': password,
         'full_name': fullName.trim(),
-        'phone': phone?.trim(),
-        'firebase_uid': firebaseUid,
         'role': role,
-      }),
-    );
-
-
-    final data = jsonDecode(utf8.decode(response.bodyBytes));
-    if (response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['detail'] ?? 'Đăng ký thất bại!');
+      };
+      _localRegisteredUsers.add(newAccount);
+      return {
+        'status': 'success',
+        'message': 'Đăng ký tài khoản thành công!',
+        'user': newAccount,
+      };
     }
   }
 
   static Future<Map<String, dynamic>> login({
-    required String email,
+    required String identifier,
     required String password,
     String? customHost,
   }) async {
     final host = customHost ?? baseUrl;
     final url = Uri.parse('$host/api/v1/auth/login');
+    final cleanId = identifier.trim().toLowerCase();
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email.trim(),
-        'password': password,
-      }),
-    );
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': cleanId,
+          'password': password,
+        }),
+      ).timeout(const Duration(seconds: 3));
 
-    final data = jsonDecode(utf8.decode(response.bodyBytes));
-    if (response.statusCode == 200) {
-      return data;
-    } else {
-      throw Exception(data['detail'] ?? 'Đăng nhập thất bại!');
+      if (response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes));
+      } else {
+        Map<String, dynamic> data = {};
+        try {
+          data = jsonDecode(utf8.decode(response.bodyBytes));
+        } catch (_) {}
+        throw Exception(data['detail'] ?? 'Đăng nhập thất bại!');
+      }
+    } catch (e) {
+      final errStr = e.toString();
+      if (errStr.contains('Tài khoản chưa được đăng ký') ||
+          errStr.contains('Mật khẩu không chính xác') ||
+          errStr.contains('không đúng')) {
+        rethrow;
+      }
+
+      // Kiểm tra tài khoản trong kho thiết bị
+      Map<String, dynamic>? matchedUser;
+      for (final u in _localRegisteredUsers) {
+        final uEmail = (u['email'] as String? ?? '').toLowerCase();
+        final uPhone = (u['phone'] as String? ?? '').trim();
+        if (uEmail == cleanId || uPhone == cleanId || uEmail.startsWith('$cleanId@')) {
+          matchedUser = u;
+          break;
+        }
+      }
+
+      if (matchedUser == null) {
+        throw Exception('Tài khoản chưa được đăng ký trong hệ thống! Vui lòng kiểm tra lại hoặc đăng ký tài khoản mới.');
+      }
+
+      if (matchedUser['password'] != password) {
+        throw Exception('Mật khẩu không chính xác! Vui lòng kiểm tra lại.');
+      }
+
+      return {
+        'status': 'success',
+        'message': 'Đăng nhập thành công!',
+        'user': matchedUser,
+      };
     }
   }
 

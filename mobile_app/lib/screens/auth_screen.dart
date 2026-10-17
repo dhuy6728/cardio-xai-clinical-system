@@ -19,75 +19,109 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLogin = true;
   bool _obscurePassword = true;
   bool _isLoading = false;
+  String? _errorMessage;
 
   // Vai trò được chọn: 'patient' (Bệnh nhân) hoặc 'doctor' (Bác sĩ)
   String _selectedRole = 'patient';
 
+  // Phương thức đăng nhập / đăng ký: 'email' hoặc 'phone'
+  String _authMethod = 'email';
+
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _emailController;
-  late TextEditingController _passwordController;
-  late TextEditingController _fullNameController;
-  final _phoneController = TextEditingController(text: '0901234567');
+  final _identifierController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _fullNameController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    _applyRoleDefaults();
-  }
-
-  void _applyRoleDefaults() {
-    if (_selectedRole == 'patient') {
-      _emailController = TextEditingController(text: 'benhnhan@cardiocare.vn');
-      _passwordController = TextEditingController(text: 'matkhau123');
-      _fullNameController = TextEditingController(text: 'Nguyễn Văn Bệnh Nhân');
-    } else {
-      _emailController = TextEditingController(text: 'bacsi@cardiocare.vn');
-      _passwordController = TextEditingController(text: 'matkhau123');
-      _fullNameController = TextEditingController(text: 'Bác sĩ Nguyễn Văn A');
-    }
+  void dispose() {
+    _identifierController.dispose();
+    _passwordController.dispose();
+    _fullNameController.dispose();
+    super.dispose();
   }
 
   void _onRoleChanged(String role) {
     setState(() {
       _selectedRole = role;
-      _applyRoleDefaults();
+      _errorMessage = null;
+    });
+  }
+
+  void _onAuthMethodChanged(String method) {
+    if (_authMethod == method) return;
+    setState(() {
+      _authMethod = method;
+      _errorMessage = null;
+      _identifierController.clear();
+      _formKey.currentState?.reset();
     });
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
+      final idText = _identifierController.text.trim();
+      final pwdText = _passwordController.text;
+
       if (_isLogin) {
         final res = await ApiService.login(
-          email: _emailController.text,
-          password: _passwordController.text,
+          identifier: idText,
+          password: pwdText,
           customHost: widget.apiHost,
         );
 
         final user = Map<String, dynamic>.from(res['user']);
-        // Gán hoặc tôn trọng vai trò đã chọn
         user['role'] = _selectedRole;
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Chào mừng ${user['full_name'] ?? 'bạn'} trở lại!')),
+              ],
+            ),
+            backgroundColor: const Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
 
         widget.onAuthSuccess(user);
       } else {
+        final fullName = _fullNameController.text.trim();
         final res = await ApiService.register(
-          email: _emailController.text,
-          password: _passwordController.text,
-          fullName: _fullNameController.text,
-          phone: _phoneController.text,
+          email: _authMethod == 'email' ? idText : null,
+          phone: _authMethod == 'phone' ? idText : null,
+          password: pwdText,
+          fullName: fullName,
           role: _selectedRole,
           customHost: widget.apiHost,
         );
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_selectedRole == 'doctor'
-                ? 'Đăng ký tài khoản Bác sĩ thành công!'
-                : 'Đăng ký tài khoản Bệnh nhân thành công!'),
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(_selectedRole == 'doctor'
+                      ? 'Đăng ký tài khoản Bác sĩ thành công!'
+                      : 'Đăng ký tài khoản Bệnh nhân thành công!'),
+                ),
+              ],
+            ),
             backgroundColor: const Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
           ),
         );
 
@@ -96,11 +130,21 @@ class _AuthScreenState extends State<AuthScreen> {
         widget.onAuthSuccess(user);
       }
     } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().replaceAll('Exception: ', '').replaceAll('SocketException', 'Lỗi kết nối');
+      setState(() => _errorMessage = msg);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$e'.replaceAll('Exception: ', '')),
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(child: Text(msg)),
+            ],
+          ),
           backgroundColor: const Color(0xFFDC2626),
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
         ),
       );
     } finally {
@@ -111,32 +155,38 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final isPatient = _selectedRole == 'patient';
+    final isEmail = _authMethod == 'email';
+    final primaryColor = isPatient ? const Color(0xFF0284C7) : const Color(0xFF0F4C81);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Branding
+                  // App Icon / Logo
                   Center(
                     child: Container(
-                      width: 68,
-                      height: 68,
+                      width: 72,
+                      height: 72,
                       decoration: BoxDecoration(
-                        color: isPatient ? const Color(0xFF0284C7) : const Color(0xFF0F4C81),
+                        gradient: LinearGradient(
+                          colors: isPatient
+                              ? [const Color(0xFF0284C7), const Color(0xFF0369A1)]
+                              : [const Color(0xFF0F4C81), const Color(0xFF1E293B)],
+                        ),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: (isPatient ? const Color(0xFF0284C7) : const Color(0xFF0F4C81)).withOpacity(0.25),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
+                            color: primaryColor.withOpacity(0.25),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
@@ -146,6 +196,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
+
+                  // Brand Title
                   Center(
                     child: Text(
                       isPatient ? 'CardioCare Sức Khỏe' : 'CardioCare Bác Sĩ',
@@ -167,9 +219,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 20),
 
-                  // YÊU CẦU CHỌN VAI TRÒ (BỆNH NHÂN / BÁC SĨ)
+                  // 1. CHỌN VAI TRÒ (BỆNH NHÂN / BÁC SĨ)
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
@@ -183,7 +235,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             borderRadius: BorderRadius.circular(10),
                             onTap: () => _onRoleChanged('patient'),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              padding: const EdgeInsets.symmetric(vertical: 9),
                               decoration: BoxDecoration(
                                 color: isPatient ? Colors.white : Colors.transparent,
                                 borderRadius: BorderRadius.circular(10),
@@ -200,13 +252,13 @@ class _AuthScreenState extends State<AuthScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text('🫀 ', style: TextStyle(fontSize: 16)),
+                                  const Text('🫀 ', style: TextStyle(fontSize: 15)),
                                   Text(
                                     'Bệnh Nhân',
                                     style: TextStyle(
                                       fontWeight: isPatient ? FontWeight.bold : FontWeight.w600,
                                       color: isPatient ? const Color(0xFF0284C7) : const Color(0xFF64748B),
-                                      fontSize: 14,
+                                      fontSize: 13.5,
                                     ),
                                   ),
                                 ],
@@ -219,7 +271,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             borderRadius: BorderRadius.circular(10),
                             onTap: () => _onRoleChanged('doctor'),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              padding: const EdgeInsets.symmetric(vertical: 9),
                               decoration: BoxDecoration(
                                 color: !isPatient ? Colors.white : Colors.transparent,
                                 borderRadius: BorderRadius.circular(10),
@@ -236,13 +288,13 @@ class _AuthScreenState extends State<AuthScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text('👨‍⚕️ ', style: TextStyle(fontSize: 16)),
+                                  const Text('👨‍⚕️ ', style: TextStyle(fontSize: 15)),
                                   Text(
                                     'Bác Sĩ',
                                     style: TextStyle(
                                       fontWeight: !isPatient ? FontWeight.bold : FontWeight.w600,
                                       color: !isPatient ? const Color(0xFF0F4C81) : const Color(0xFF64748B),
-                                      fontSize: 14,
+                                      fontSize: 13.5,
                                     ),
                                   ),
                                 ],
@@ -254,9 +306,90 @@ class _AuthScreenState extends State<AuthScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
 
-                  // Bảo mật kho lưu trữ Badge (không dùng chữ SQL)
+                  // 2. CHỌN ĐĂNG NHẬP / ĐĂNG KÝ BẰNG EMAIL HOẶC SỐ ĐIỆN THOẠI
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () => _onAuthMethodChanged('email'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isEmail ? primaryColor.withOpacity(0.08) : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isEmail ? primaryColor : const Color(0xFFCBD5E1),
+                                width: isEmail ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.email_outlined,
+                                  size: 16,
+                                  color: isEmail ? primaryColor : const Color(0xFF64748B),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Dùng Email',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: isEmail ? FontWeight.bold : FontWeight.w500,
+                                    color: isEmail ? primaryColor : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () => _onAuthMethodChanged('phone'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: !isEmail ? primaryColor.withOpacity(0.08) : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: !isEmail ? primaryColor : const Color(0xFFCBD5E1),
+                                width: !isEmail ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.phone_android_outlined,
+                                  size: 16,
+                                  color: !isEmail ? primaryColor : const Color(0xFF64748B),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Dùng Số điện thoại',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: !isEmail ? FontWeight.bold : FontWeight.w500,
+                                    color: !isEmail ? primaryColor : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Bảo Mật Kho Lưu Trữ Badge
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
@@ -264,9 +397,8 @@ class _AuthScreenState extends State<AuthScreen> {
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: const Color(0xFFBBF7D0)),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
+                    child: const Row(
+                      children: [
                         Icon(Icons.lock_outline, size: 16, color: Color(0xFF16A34A)),
                         SizedBox(width: 8),
                         Expanded(
@@ -278,74 +410,129 @@ class _AuthScreenState extends State<AuthScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 18),
 
-                  // Form Fields
-                  if (!_isLogin) ...[
-                    TextFormField(
-                      controller: _fullNameController,
-                      decoration: InputDecoration(
-                        labelText: isPatient ? 'Họ và tên của bạn' : 'Họ và tên Bác sĩ',
-                        prefixIcon: const Icon(Icons.person_outline),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(height: 16),
+
+                  // CẢNH BÁO LỖI NỔI BẬT NẾU CÓ
+                  if (_errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFECACA), width: 1.2),
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Vui lòng nhập họ tên' : null,
-                    ),
-                    const SizedBox(height: 14),
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: InputDecoration(
-                        labelText: 'Số điện thoại',
-                        prefixIcon: const Icon(Icons.phone_outlined),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 20),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(
+                                color: Color(0xFF991B1B),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 14),
                   ],
 
+                  // FORM FIELDS: HOÀN TOÀN TRỐNG KÈM DÒNG CHỮ HƯỚNG DẪN MỜ
+                  if (!_isLogin) ...[
+                    TextFormField(
+                      controller: _fullNameController,
+                      decoration: InputDecoration(
+                        labelText: isPatient ? 'Họ và tên của bạn' : 'Họ và tên Bác sĩ',
+                        hintText: isPatient ? 'Nhập họ và tên đầy đủ' : 'Ví dụ: Bác sĩ Nguyễn Văn A',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                        prefixIcon: const Icon(Icons.person_outline),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Vui lòng nhập họ và tên' : null,
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
+                  // Email HOẶC Số điện thoại (Chỉ yêu cầu 1 trong 2)
                   TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
+                    controller: _identifierController,
+                    keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.phone,
                     decoration: InputDecoration(
-                      labelText: 'Địa chỉ Email',
-                      prefixIcon: const Icon(Icons.email_outlined),
+                      labelText: isEmail ? 'Địa chỉ Email' : 'Số điện thoại',
+                      hintText: isEmail
+                          ? 'Nhập địa chỉ email (VD: vidu@gmail.com)'
+                          : 'Nhập số điện thoại (VD: 0912345678)',
+                      hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                      prefixIcon: Icon(isEmail ? Icons.email_outlined : Icons.phone_android_outlined),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
-                    validator: (v) => (v == null || !v.contains('@')) ? 'Email không hợp lệ' : null,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return isEmail ? 'Vui lòng nhập địa chỉ email' : 'Vui lòng nhập số điện thoại';
+                      }
+                      final clean = v.trim();
+                      if (isEmail) {
+                        if (!clean.contains('@') || !clean.contains('.')) {
+                          return 'Email không hợp lệ (Ví dụ: ten@domain.com)';
+                        }
+                      } else {
+                        final phoneClean = clean.replaceAll(' ', '');
+                        if (phoneClean.length < 10 || !phoneClean.startsWith('0')) {
+                          return 'Số điện thoại không hợp lệ (10 chữ số, bắt đầu bằng 0)';
+                        }
+                      }
+                      return null;
+                    },
                   ),
+
                   const SizedBox(height: 14),
 
+                  // Mật khẩu
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'Mật khẩu',
+                      hintText: 'Nhập mật khẩu của bạn (tối thiểu 6 ký tự)',
+                      hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                        icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: const Color(0xFF64748B)),
                         onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                       ),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
-                    validator: (v) => (v == null || v.length < 6) ? 'Mật khẩu tối thiểu 6 ký tự' : null,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Vui lòng nhập mật khẩu';
+                      if (v.length < 6) return 'Mật khẩu tối thiểu 6 ký tự';
+                      return null;
+                    },
                   ),
+
                   const SizedBox(height: 20),
 
-                  // Submit Button
+                  // Nút Gửi (Đăng Nhập / Đăng Ký)
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isPatient ? const Color(0xFF0284C7) : const Color(0xFF0F4C81),
+                        backgroundColor: primaryColor,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
@@ -361,17 +548,26 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                     ),
                   ),
+
                   const SizedBox(height: 14),
 
-                  // Toggle Login/Register
+                  // Chuyển đổi giữa Đăng Nhập và Đăng Ký
                   TextButton(
-                    onPressed: () => setState(() => _isLogin = !_isLogin),
+                    onPressed: () {
+                      setState(() {
+                        _isLogin = !_isLogin;
+                        _formKey.currentState?.reset();
+                        _identifierController.clear();
+                        _passwordController.clear();
+                        _fullNameController.clear();
+                      });
+                    },
                     child: Text(
                       _isLogin
                           ? 'Chưa có tài khoản? Bấm để Đăng ký ngay'
                           : 'Đã có tài khoản? Quay lại Đăng nhập',
                       style: TextStyle(
-                        color: isPatient ? const Color(0xFF0284C7) : const Color(0xFF0F4C81),
+                        color: primaryColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
