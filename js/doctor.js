@@ -1,78 +1,89 @@
 /**
  * CardioCare AI - Doctor Clinical Decision Support & XAI Component Logic
+ * Manages clinical data entry, SHAP attribution, and Cloud Firestore sync.
  */
 
-function loadDoctorPreset(presetKey) {
+function calcDoctorBMI() {
+  const hInput = document.getElementById('doc-height');
+  const wInput = document.getElementById('doc-weight');
+  const badge = document.getElementById('doc-bmi-badge');
+
+  const h = parseFloat(hInput?.value || 0);
+  const w = parseFloat(wInput?.value || 0);
+
+  if (h > 0 && w > 0 && badge) {
+    const bmi = (w / Math.pow(h / 100, 2)).toFixed(1);
+    let status = "Bình thường";
+    let badgeColor = "text-emerald-700 bg-emerald-50 border-emerald-200";
+    if (bmi < 18.5) {
+      status = "Thiếu cân";
+      badgeColor = "text-amber-700 bg-amber-50 border-amber-200";
+    } else if (bmi >= 25.0) {
+      status = "Béo phì";
+      badgeColor = "text-rose-700 bg-rose-50 border-rose-200";
+    } else if (bmi >= 23.0) {
+      status = "Thừa cân nhẹ";
+      badgeColor = "text-amber-700 bg-amber-50 border-amber-200";
+    }
+    badge.className = `font-bold text-xs px-2.5 py-1 rounded-full border ${badgeColor}`;
+    badge.innerText = `BMI: ${bmi} (${status})`;
+  } else if (badge) {
+    badge.className = "font-semibold text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200";
+    badge.innerText = "BMI: --";
+  }
+}
+
+function executeDoctorXAI(notify = true) {
   const nameInput = document.getElementById('doc-patient-name');
   const ageInput = document.getElementById('doc-age');
-  const genderInput = document.getElementById('doc-gender');
   const heightInput = document.getElementById('doc-height');
   const weightInput = document.getElementById('doc-weight');
   const apHiInput = document.getElementById('doc-ap-hi');
   const apLoInput = document.getElementById('doc-ap-lo');
   const cholInput = document.getElementById('doc-chol');
   const glucInput = document.getElementById('doc-gluc');
-  const smokeInput = document.getElementById('doc-smoke');
-  const alcoInput = document.getElementById('doc-alco');
-  const activeInput = document.getElementById('doc-active');
 
-  if (presetKey === 'high_risk') {
-    if (nameInput) nameInput.value = 'Trần Văn Cao';
-    if (ageInput) ageInput.value = 54;
-    if (genderInput) genderInput.value = 2; // Nam
-    if (heightInput) heightInput.value = 168;
-    if (weightInput) weightInput.value = 86;
-    if (apHiInput) apHiInput.value = 155;
-    if (apLoInput) apLoInput.value = 98;
-    if (cholInput) cholInput.value = 3; // Rất cao
-    if (glucInput) glucInput.value = 2; // Tiền ĐTĐ
-    if (smokeInput) smokeInput.checked = true;
-    if (alcoInput) alcoInput.checked = true;
-    if (activeInput) activeInput.checked = false;
-  } else if (presetKey === 'healthy') {
-    if (nameInput) nameInput.value = 'Lê Thị Mai';
-    if (ageInput) ageInput.value = 32;
-    if (genderInput) genderInput.value = 1; // Nữ
-    if (heightInput) heightInput.value = 162;
-    if (weightInput) weightInput.value = 52;
-    if (apHiInput) apHiInput.value = 112;
-    if (apLoInput) apLoInput.value = 74;
-    if (cholInput) cholInput.value = 1; // Bình thường
-    if (glucInput) glucInput.value = 1;
-    if (smokeInput) smokeInput.checked = false;
-    if (alcoInput) alcoInput.checked = false;
-    if (activeInput) activeInput.checked = true;
-  } else {
-    // Default standard case
-    if (nameInput) nameInput.value = 'Nguyễn Văn A';
-    if (ageInput) ageInput.value = 50;
-    if (genderInput) genderInput.value = 2;
-    if (heightInput) heightInput.value = 165;
-    if (weightInput) weightInput.value = 72;
-    if (apHiInput) apHiInput.value = 135;
-    if (apLoInput) apLoInput.value = 88;
-    if (cholInput) cholInput.value = 2;
-    if (glucInput) glucInput.value = 1;
-    if (smokeInput) smokeInput.checked = false;
-    if (alcoInput) alcoInput.checked = false;
-    if (activeInput) activeInput.checked = true;
+  const name = nameInput?.value.trim();
+  if (!name) {
+    if (notify && typeof showToast === 'function') showToast("Vui lòng nhập họ và tên bệnh nhân!", "warning");
+    nameInput?.focus();
+    return false;
+  }
+  if (!ageInput?.value) {
+    if (notify && typeof showToast === 'function') showToast("Vui lòng nhập tuổi bệnh nhân!", "warning");
+    ageInput?.focus();
+    return false;
+  }
+  if (!heightInput?.value) {
+    if (notify && typeof showToast === 'function') showToast("Vui lòng nhập chiều cao!", "warning");
+    heightInput?.focus();
+    return false;
+  }
+  if (!weightInput?.value) {
+    if (notify && typeof showToast === 'function') showToast("Vui lòng nhập cân nặng!", "warning");
+    weightInput?.focus();
+    return false;
+  }
+  if (!apHiInput?.value) {
+    if (notify && typeof showToast === 'function') showToast("Vui lòng nhập Huyết áp tâm thu!", "warning");
+    apHiInput?.focus();
+    return false;
+  }
+  if (!apLoInput?.value) {
+    if (notify && typeof showToast === 'function') showToast("Vui lòng nhập Huyết áp tâm trương!", "warning");
+    apLoInput?.focus();
+    return false;
   }
 
-  // Re-run analysis without toast
-  executeDoctorXAI(false);
-}
-
-function executeDoctorXAI(notify = false) {
-  const name = document.getElementById('doc-patient-name')?.value.trim() || "Bệnh nhân";
   const params = {
-    age: parseInt(document.getElementById('doc-age')?.value || 50),
+    age: parseInt(ageInput.value),
     gender: parseInt(document.getElementById('doc-gender')?.value || 2),
-    height: parseFloat(document.getElementById('doc-height')?.value || 165),
-    weight: parseFloat(document.getElementById('doc-weight')?.value || 72),
-    ap_hi: parseInt(document.getElementById('doc-ap-hi')?.value || 135),
-    ap_lo: parseInt(document.getElementById('doc-ap-lo')?.value || 88),
-    chol: parseInt(document.getElementById('doc-chol')?.value || 2),
-    gluc: parseInt(document.getElementById('doc-gluc')?.value || 1),
+    height: parseFloat(heightInput.value),
+    weight: parseFloat(weightInput.value),
+    ap_hi: parseInt(apHiInput.value),
+    ap_lo: parseInt(apLoInput.value),
+    chol: parseInt(cholInput?.value || 1),
+    gluc: parseInt(glucInput?.value || 1),
     smoke: document.getElementById('doc-smoke')?.checked ? 1 : 0,
     alco: document.getElementById('doc-alco')?.checked ? 1 : 0,
     active: document.getElementById('doc-active')?.checked ? 1 : 0
@@ -80,7 +91,7 @@ function executeDoctorXAI(notify = false) {
 
   const res = evaluateCardioRisk(params);
 
-  // 1. Render 4 Quick Metric Cards
+  // 1. Render 4 Thẻ chỉ số tổng quan
   const metricsRow = document.getElementById('doc-metrics-row');
   if (metricsRow) {
     metricsRow.innerHTML = `
@@ -109,7 +120,7 @@ function executeDoctorXAI(notify = false) {
     `;
   }
 
-  // 2. Render XAI SHAP Factor Breakdown Bars
+  // 2. Render Biểu đồ thanh giải thích XAI SHAP
   const xaiContainer = document.getElementById('doc-xai-factors-container');
   if (xaiContainer) {
     xaiContainer.innerHTML = res.factors.map(f => {
@@ -132,7 +143,7 @@ function executeDoctorXAI(notify = false) {
     }).join('');
   }
 
-  // 3. Render Recommendation & Clinical Protocol
+  // 3. Render Khuyến nghị & phác đồ lâm sàng
   const protContainer = document.getElementById('doc-protocol-container');
   if (protContainer) {
     protContainer.innerHTML = `
@@ -154,36 +165,32 @@ function executeDoctorXAI(notify = false) {
     `;
   }
 
-  // ONLY notify if user explicitly triggered via button click (NEVER on page load)
   if (notify && typeof showToast === 'function') {
-    showToast("Phân tích XAI hoàn tất!", "info");
+    showToast("Phân tích XAI hoàn tất!", "success");
   }
+  return true;
 }
 
 function saveDoctorCaseToRepo() {
-  const nameInput = document.getElementById('doc-patient-name');
-  const name = nameInput?.value.trim();
-  if (!name) {
-    showToast("Vui lòng nhập họ và tên bệnh nhân trước khi lưu!", "warning");
-    nameInput?.focus();
-    return;
-  }
+  const success = executeDoctorXAI(false);
+  if (!success) return;
 
-  const params = {
-    age: parseInt(document.getElementById('doc-age').value),
-    gender: parseInt(document.getElementById('doc-gender').value),
-    height: parseFloat(document.getElementById('doc-height').value),
-    weight: parseFloat(document.getElementById('doc-weight').value),
-    ap_hi: parseInt(document.getElementById('doc-ap-hi').value),
-    ap_lo: parseInt(document.getElementById('doc-ap-lo').value),
-    chol: parseInt(document.getElementById('doc-chol').value),
-    gluc: parseInt(document.getElementById('doc-gluc').value),
-    smoke: document.getElementById('doc-smoke').checked ? 1 : 0,
-    alco: document.getElementById('doc-alco').checked ? 1 : 0,
-    active: document.getElementById('doc-active').checked ? 1 : 0
-  };
+  const name = document.getElementById('doc-patient-name').value.trim();
+  const age = parseInt(document.getElementById('doc-age').value);
+  const gender = parseInt(document.getElementById('doc-gender').value);
+  const height = parseFloat(document.getElementById('doc-height').value);
+  const weight = parseFloat(document.getElementById('doc-weight').value);
+  const ap_hi = parseInt(document.getElementById('doc-ap-hi').value);
+  const ap_lo = parseInt(document.getElementById('doc-ap-lo').value);
+  const chol = parseInt(document.getElementById('doc-chol').value);
+  const gluc = parseInt(document.getElementById('doc-gluc').value);
+  const smoke = document.getElementById('doc-smoke').checked ? 1 : 0;
+  const alco = document.getElementById('doc-alco').checked ? 1 : 0;
+  const active = document.getElementById('doc-active').checked ? 1 : 0;
 
+  const params = { age, gender, height, weight, ap_hi, ap_lo, chol, gluc, smoke, alco, active };
   const res = evaluateCardioRisk(params);
+
   const now = new Date();
   const dateFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
@@ -197,8 +204,13 @@ function saveDoctorCaseToRepo() {
     bmi: res.bmi,
     chol: params.chol,
     gluc: params.gluc,
+    smoke: params.smoke,
+    alco: params.alco,
+    active: params.active,
     recommendation: `Bác sĩ ghi nhận ca khám ${name}: ${res.level} (${(res.prob * 100).toFixed(1)}%). ${res.advice}`
   });
 
-  showToast(`Đã lưu bệnh án cho "${name}" vào kho lưu trữ thành công!`, "success");
+  if (typeof showToast === 'function') {
+    showToast(`Đã lưu bệnh án cho "${name}" vào kho lưu trữ thành công!`, "success");
+  }
 }

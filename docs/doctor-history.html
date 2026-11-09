@@ -30,14 +30,20 @@
           </div>
         </a>
 
-        <!-- Role Selector (Patient vs Doctor) -->
-        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-          <a href="index.html" id="role-patient-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
-            <span>🫀 Bệnh nhân</span>
-          </a>
-          <a href="doctor.html" id="role-doctor-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-sky-700">
-            <span>👨‍⚕️ Bác sĩ</span>
-          </a>
+        <!-- Right Controls: Role Switcher & Auth Area -->
+        <div class="flex items-center gap-3">
+          <!-- Role Selector (Patient vs Doctor) -->
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <a href="index.html" id="role-patient-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
+              <span>🫀 Bệnh nhân</span>
+            </a>
+            <a href="doctor.html" id="role-doctor-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-sky-700">
+              <span>👨‍⚕️ Bác sĩ</span>
+            </a>
+          </div>
+
+          <!-- Auth Status / Login Button -->
+          <div id="navbar-auth-container"></div>
         </div>
       </div>
     </div>
@@ -103,6 +109,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/toast.js"></script>
   <script src="js/navbar.js"></script>

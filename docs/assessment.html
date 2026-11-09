@@ -11,7 +11,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="selection:bg-sky-500 selection:text-white">
+<body class="selection:bg-sky-500 selection:text-white min-h-screen flex flex-col">
 
   <!-- TOP HEADER & BRAND -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
@@ -30,14 +30,20 @@
           </div>
         </a>
 
-        <!-- Role Selector (Patient vs Doctor) -->
-        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-          <a href="index.html" id="role-patient-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-sky-700">
-            <span>🫀 Bệnh nhân</span>
-          </a>
-          <a href="doctor.html" id="role-doctor-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
-            <span>👨‍⚕️ Bác sĩ</span>
-          </a>
+        <!-- Right Controls: Role Switcher & Auth Area -->
+        <div class="flex items-center gap-3">
+          <!-- Role Selector -->
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <a href="index.html" id="role-patient-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-sky-700">
+              <span>🫀 Bệnh nhân</span>
+            </a>
+            <a href="doctor.html" id="role-doctor-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
+              <span>👨‍⚕️ Bác sĩ</span>
+            </a>
+          </div>
+
+          <!-- Auth Status / Login Button (Rendered by js/navbar.js) -->
+          <div id="navbar-auth-container"></div>
         </div>
       </div>
     </div>
@@ -67,6 +73,10 @@
   <!-- MAIN APP CONTAINER -->
   <main class="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <section class="fade-in">
+
+      <!-- Patient Welcome / Auth Banner -->
+      <div id="patient-auth-banner" class="hidden mb-6"></div>
+
       <!-- Info Header -->
       <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-6">
         <div class="flex items-start gap-4">
@@ -76,48 +86,50 @@
           <div>
             <h1 class="text-xl font-bold text-slate-900">Tự đánh giá nguy cơ tim mạch (Bệnh nhân)</h1>
             <p class="text-sm text-slate-500 mt-1 leading-relaxed">
-              Nhằm bảo mật tuyệt đối quyền riêng tư, hệ thống <b>không yêu cầu nhập họ và tên</b>. Khi bấm đánh giá, kết quả sẽ tự động lưu vào <b>Kho lưu trữ sức khỏe</b> theo ngày và tình trạng nguy cơ.
+              Nhằm bảo vệ tối đa quyền riêng tư, hệ thống <b>không yêu cầu nhập họ tên khi khám</b>. Khi bấm đánh giá, kết quả sẽ tự động lưu vào <b>Kho lưu trữ sức khỏe</b> theo ngày và tình trạng nguy cơ để bạn tiện theo dõi.
             </p>
           </div>
         </div>
       </div>
 
-      <!-- Form -->
+      <!-- Form (Hoàn toàn trống, không điền sẵn dữ liệu giả) -->
       <form id="patient-assessment-form" onsubmit="submitPatientAssessment(event)" class="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
         <!-- 1. Body metrics -->
         <div>
-          <h3 class="text-base font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
-            <span class="w-6 h-6 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">1</span>
-            Thông số thể trạng
-          </h3>
+          <div class="flex items-center justify-between border-b pb-2 mb-4">
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">1</span>
+              Thông số thể trạng
+            </h3>
+            <span id="p-bmi-badge" class="font-semibold text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+              BMI: --
+            </span>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Tuổi của bạn (năm):</label>
-              <input type="number" id="p-age" min="18" max="95" value="48" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+              <input type="number" id="p-age" min="10" max="120" placeholder="Nhập số tuổi" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Giới tính sinh học:</label>
               <div class="flex gap-4 mt-2">
-                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <label class="flex items-center gap-2 text-sm cursor-pointer font-medium">
                   <input type="radio" name="p-gender" value="2" checked class="text-sky-600"> Nam
                 </label>
-                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <label class="flex items-center gap-2 text-sm cursor-pointer font-medium">
                   <input type="radio" name="p-gender" value="1" class="text-sky-600"> Nữ
                 </label>
               </div>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Chiều cao (cm):</label>
-              <input type="number" id="p-height" min="120" max="220" value="165" oninput="calcPatientBMI()" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+              <input type="number" id="p-height" min="50" max="250" placeholder="Nhập chiều cao" oninput="calcPatientBMI()" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Cân nặng (kg):</label>
-              <input type="number" id="p-weight" min="30" max="180" step="0.5" value="68" oninput="calcPatientBMI()" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+              <input type="number" id="p-weight" min="20" max="300" step="0.5" placeholder="Nhập cân nặng" oninput="calcPatientBMI()" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
             </div>
-          </div>
-          <div class="mt-3 bg-sky-50 border border-sky-100 rounded-xl p-3 flex items-center justify-between text-xs">
-            <span class="text-slate-600 font-medium">Chỉ số thể trạng tính toán (BMI):</span>
-            <span id="p-bmi-badge" class="font-bold text-sky-700 text-sm">24.98 kg/m² (Thừa cân nhẹ)</span>
           </div>
         </div>
 
@@ -125,33 +137,33 @@
         <div>
           <h3 class="text-base font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
             <span class="w-6 h-6 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">2</span>
-            Huyết áp & xét nghiệm máu (nếu có)
+            Huyết áp & chỉ số xét nghiệm máu
           </h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Huyết áp tối đa (Tâm thu - mmHg):</label>
-              <input type="number" id="p-ap-hi" min="80" max="230" value="130" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-semibold">
-              <span class="text-[11px] text-slate-400">Số đo phía trên trên máy đo huyết áp</span>
+              <input type="number" id="p-ap-hi" min="60" max="260" placeholder="Chỉ số tối đa" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-sky-700">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Huyết áp tối thiểu (Tâm trương - mmHg):</label>
-              <input type="number" id="p-ap-lo" min="50" max="140" value="85" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-semibold">
-              <span class="text-[11px] text-slate-400">Số đo phía dưới trên máy đo huyết áp</span>
+              <input type="number" id="p-ap-lo" min="40" max="180" placeholder="Chỉ số tối thiểu" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-sky-700">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Mức Cholesterol trong máu:</label>
-              <select id="p-chol" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white">
-                <option value="1">1: Bình thường (< 5.2 mmol/L)</option>
-                <option value="2">2: Hơi cao / Ranh giới (5.2 - 6.2 mmol/L)</option>
-                <option value="3">3: Rất cao (> 6.2 mmol/L)</option>
+              <select id="p-chol" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white font-medium">
+                <option value="" disabled selected>Chọn mức cholesterol</option>
+                <option value="1">Mức 1: Bình thường (&lt; 5.2 mmol/L)</option>
+                <option value="2">Mức 2: Hơi cao / Ranh giới (5.2 - 6.2 mmol/L)</option>
+                <option value="3">Mức 3: Rất cao (&gt; 6.2 mmol/L)</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Đường huyết lúc đói (Glucose):</label>
-              <select id="p-gluc" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white">
-                <option value="1">1: Bình thường (< 5.6 mmol/L)</option>
-                <option value="2">2: Tiền đái tháo đường (5.6 - 6.9 mmol/L)</option>
-                <option value="3">3: Đái tháo đường (≥ 7.0 mmol/L)</option>
+              <select id="p-gluc" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white font-medium">
+                <option value="" disabled selected>Chọn mức đường huyết</option>
+                <option value="1">Mức 1: Bình thường (&lt; 5.6 mmol/L)</option>
+                <option value="2">Mức 2: Tiền đái tháo đường (5.6 - 6.9 mmol/L)</option>
+                <option value="3">Mức 3: Đái tháo đường (≥ 7.0 mmol/L)</option>
               </select>
             </div>
           </div>
@@ -161,25 +173,25 @@
         <div>
           <h3 class="text-base font-bold text-slate-800 border-b pb-2 mb-4 flex items-center gap-2">
             <span class="w-6 h-6 rounded-full bg-sky-600 text-white text-xs flex items-center justify-center font-bold">3</span>
-            Thói quen hàng ngày
+            Lối sống & thói quen hàng ngày
           </h3>
-          <div class="space-y-3">
-            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
               <input type="checkbox" id="p-smoke" class="w-4 h-4 text-sky-600 rounded">
-              <span class="text-sm font-medium text-slate-700">Có hút thuốc lá (chủ động hoặc thường xuyên tiếp xúc khói thuốc)</span>
+              <span class="text-xs font-semibold text-slate-700">Hút thuốc lá</span>
             </label>
-            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+            <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
               <input type="checkbox" id="p-alco" class="w-4 h-4 text-sky-600 rounded">
-              <span class="text-sm font-medium text-slate-700">Có uống bia rượu hàng tuần</span>
+              <span class="text-xs font-semibold text-slate-700">Uống rượu bia</span>
             </label>
-            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
-              <input type="checkbox" id="p-active" checked class="w-4 h-4 text-sky-600 rounded">
-              <span class="text-sm font-medium text-slate-700">Có vận động thể dục đều đặn (≥ 30 phút mỗi ngày)</span>
+            <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition">
+              <input type="checkbox" id="p-active" class="w-4 h-4 text-sky-600 rounded">
+              <span class="text-xs font-semibold text-slate-700">Vận động thể thao</span>
             </label>
           </div>
         </div>
 
-        <button type="submit" id="btn-submit-patient" class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white font-bold text-base shadow-lg shadow-sky-500/20 transition active:scale-[0.99] flex items-center justify-center gap-2">
+        <button type="submit" id="btn-submit-patient" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white font-bold text-base shadow-lg shadow-sky-500/20 transition active:scale-[0.99] flex items-center justify-center gap-2">
           <i class="fa-solid fa-microchip"></i> Đánh giá nguy cơ & lưu vào kho lưu trữ
         </button>
       </form>
@@ -210,6 +222,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/data.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/cardio-ai.js"></script>
@@ -218,7 +231,7 @@
   <script src="js/assessment.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      calcPatientBMI();
+      initPatientAssessmentPage();
     });
   </script>
 </body>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập & Đăng ký — CardioCare AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Firebase App & Firestore -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between antialiased">
+
+  <!-- Minimal Header -->
+  <header class="py-4 px-6 border-b border-slate-200 bg-white">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-md">
+          <i class="fa-solid fa-heart-pulse"></i>
+        </div>
+        <div>
+          <span class="text-base font-extrabold tracking-tight text-slate-900 block leading-tight">CardioCare AI</span>
+          <span class="text-[11px] text-slate-500 font-medium">Hệ thống Y tế & Tim mạch</span>
+        </div>
+      </a>
+      <a href="index.html" class="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại trang chủ
+      </a>
+    </div>
+  </header>
+
+  <!-- Auth Container -->
+  <main class="flex-1 flex items-center justify-center p-4 sm:p-8">
+    <div class="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8 fade-in">
+
+      <!-- Header Icon -->
+      <div class="text-center mb-6">
+        <div id="auth-role-avatar" class="w-16 h-16 mx-auto rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-3xl mb-3 shadow-inner">
+          🫀
+        </div>
+        <h1 id="auth-title" class="text-2xl font-black text-slate-900">Đăng nhập tài khoản</h1>
+        <p id="auth-subtitle" class="text-xs text-slate-500 mt-1">Đồng bộ dữ liệu sức khỏe thời gian thực với ứng dụng di động</p>
+      </div>
+
+      <!-- Mode Selector: Đăng nhập vs Đăng ký -->
+      <div class="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 mb-5">
+        <button type="button" id="tab-login" onclick="switchAuthMode(true)" class="flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all shadow-sm bg-white text-sky-700">
+          Đăng nhập
+        </button>
+        <button type="button" id="tab-register" onclick="switchAuthMode(false)" class="flex-1 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 rounded-xl transition-all">
+          Đăng ký mới
+        </button>
+      </div>
+
+      <!-- Role Selector: Bệnh nhân vs Bác sĩ -->
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-700 mb-1.5">Vai trò tài khoản:</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="role-patient" onclick="selectRole('patient')" class="py-2 px-3 rounded-xl border-2 border-sky-600 bg-sky-50 text-sky-800 text-xs font-bold flex items-center justify-center gap-1.5 transition">
+            <span>🫀 Bệnh nhân</span>
+          </button>
+          <button type="button" id="role-doctor" onclick="selectRole('doctor')" class="py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+            <span>👨‍⚕️ Bác sĩ</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Method Selector: Email vs Số điện thoại -->
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-700 mb-1.5">Phương thức:</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" id="method-email" onclick="selectMethod('email')" class="py-2 px-3 rounded-xl border border-sky-600 bg-sky-50/60 text-sky-800 text-xs font-bold flex items-center justify-center gap-1.5 transition">
+            <i class="fa-regular fa-envelope"></i> Dùng email
+          </button>
+          <button type="button" id="method-phone" onclick="selectMethod('phone')" class="py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-mobile-screen"></i> Số điện thoại
+          </button>
+        </div>
+      </div>
+
+      <!-- Error Message Banner -->
+      <div id="auth-error-box" class="hidden mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-start gap-2">
+        <i class="fa-solid fa-triangle-exclamation text-rose-600 mt-0.5 flex-shrink-0"></i>
+        <span id="auth-error-text">Lỗi đăng nhập</span>
+      </div>
+
+      <!-- Main Auth Form -->
+      <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-3.5">
+        
+        <!-- Họ và tên (Chỉ hiển thị khi Đăng ký) -->
+        <div id="field-fullname" class="hidden">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên:</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-regular fa-user text-sm"></i>
+            </span>
+            <input type="text" id="auth-fullname" placeholder="Nhập họ và tên đầy đủ" class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+          </div>
+        </div>
+
+        <!-- Email hoặc Số điện thoại -->
+        <div>
+          <label id="label-identifier" class="block text-xs font-semibold text-slate-700 mb-1">Địa chỉ email:</label>
+          <div class="relative">
+            <span id="icon-identifier" class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-regular fa-envelope text-sm"></i>
+            </span>
+            <input type="text" id="auth-identifier" placeholder="Nhập địa chỉ email" required class="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+          </div>
+        </div>
+
+        <!-- Mật khẩu -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Mật khẩu:</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-solid fa-lock text-sm"></i>
+            </span>
+            <input type="password" id="auth-password" placeholder="Nhập mật khẩu" required class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+            <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+              <i id="pwd-toggle-icon" class="fa-regular fa-eye-slash text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="auth-submit-btn" class="w-full py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-sm shadow-md transition-all active:scale-98 flex items-center justify-center gap-2 mt-4">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i>
+          <span id="auth-btn-text">Đăng nhập tài khoản</span>
+        </button>
+      </form>
+
+      <!-- Bottom Note -->
+      <div class="mt-5 pt-4 border-t border-slate-100 text-center">
+        <p class="text-xs text-slate-500 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+          <span>Bảo mật danh tính & đồng bộ Firebase Cloud an toàn</span>
+        </p>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="py-4 text-center text-xs text-slate-400 bg-white border-t border-slate-100">
+    CardioCare AI © 2026 — Nền tảng y tế tim mạch đa nền tảng
+  </footer>
+
+  <script src="js/toast.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    let isLoginMode = true;
+    let selectedRole = 'patient';
+    let selectedMethod = 'email';
+
+    function switchAuthMode(login) {
+      isLoginMode = login;
+      const tabLogin = document.getElementById('tab-login');
+      const tabReg = document.getElementById('tab-register');
+      const fieldName = document.getElementById('field-fullname');
+      const title = document.getElementById('auth-title');
+      const btnText = document.getElementById('auth-btn-text');
+      const errBox = document.getElementById('auth-error-box');
+      if (errBox) errBox.classList.add('hidden');
+
+      if (login) {
+        tabLogin.className = "flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all shadow-sm bg-white text-sky-700";
+        tabReg.className = "flex-1 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 rounded-xl transition-all";
+        fieldName.classList.add('hidden');
+        title.innerText = "Đăng nhập tài khoản";
+        btnText.innerText = "Đăng nhập tài khoản";
+      } else {
+        tabReg.className = "flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all shadow-sm bg-white text-sky-700";
+        tabLogin.className = "flex-1 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 rounded-xl transition-all";
+        fieldName.classList.remove('hidden');
+        title.innerText = "Đăng ký tài khoản mới";
+        btnText.innerText = "Tạo tài khoản " + (selectedRole === 'doctor' ? 'Bác sĩ' : 'Bệnh nhân');
+      }
+    }
+
+    function selectRole(role) {
+      selectedRole = role;
+      const btnPatient = document.getElementById('role-patient');
+      const btnDoc = document.getElementById('role-doctor');
+      const avatar = document.getElementById('auth-role-avatar');
+      const btnText = document.getElementById('auth-btn-text');
+
+      if (role === 'doctor') {
+        btnDoc.className = "py-2 px-3 rounded-xl border-2 border-sky-700 bg-sky-50 text-sky-900 text-xs font-bold flex items-center justify-center gap-1.5 transition";
+        btnPatient.className = "py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition";
+        avatar.innerHTML = '👨‍⚕️';
+        avatar.className = "w-16 h-16 mx-auto rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-3xl mb-3 shadow-inner";
+        if (!isLoginMode) btnText.innerText = "Tạo tài khoản Bác sĩ";
+      } else {
+        btnPatient.className = "py-2 px-3 rounded-xl border-2 border-sky-600 bg-sky-50 text-sky-800 text-xs font-bold flex items-center justify-center gap-1.5 transition";
+        btnDoc.className = "py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition";
+        avatar.innerHTML = '🫀';
+        avatar.className = "w-16 h-16 mx-auto rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-3xl mb-3 shadow-inner";
+        if (!isLoginMode) btnText.innerText = "Tạo tài khoản Bệnh nhân";
+      }
+    }
+
+    function selectMethod(method) {
+      selectedMethod = method;
+      const btnEmail = document.getElementById('method-email');
+      const btnPhone = document.getElementById('method-phone');
+      const labelId = document.getElementById('label-identifier');
+      const inputId = document.getElementById('auth-identifier');
+      const iconId = document.getElementById('icon-identifier');
+
+      if (method === 'phone') {
+        btnPhone.className = "py-2 px-3 rounded-xl border-2 border-sky-600 bg-sky-50 text-sky-800 text-xs font-bold flex items-center justify-center gap-1.5 transition";
+        btnEmail.className = "py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition";
+        labelId.innerText = "Số điện thoại:";
+        inputId.placeholder = "Nhập số điện thoại";
+        inputId.type = "tel";
+        iconId.innerHTML = '<i class="fa-solid fa-mobile-screen text-sm"></i>';
+      } else {
+        btnEmail.className = "py-2 px-3 rounded-xl border-2 border-sky-600 bg-sky-50 text-sky-800 text-xs font-bold flex items-center justify-center gap-1.5 transition";
+        btnPhone.className = "py-2 px-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition";
+        labelId.innerText = "Địa chỉ email:";
+        inputId.placeholder = "Nhập địa chỉ email";
+        inputId.type = "text";
+        iconId.innerHTML = '<i class="fa-regular fa-envelope text-sm"></i>';
+      }
+    }
+
+    function togglePasswordVisibility() {
+      const pwd = document.getElementById('auth-password');
+      const icon = document.getElementById('pwd-toggle-icon');
+      if (pwd.type === 'password') {
+        pwd.type = 'text';
+        icon.className = 'fa-regular fa-eye text-sm';
+      } else {
+        pwd.type = 'password';
+        icon.className = 'fa-regular fa-eye-slash text-sm';
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const errBox = document.getElementById('auth-error-box');
+      const errText = document.getElementById('auth-error-text');
+      const submitBtn = document.getElementById('auth-submit-btn');
+
+      errBox.classList.add('hidden');
+      const identifier = document.getElementById('auth-identifier').value.trim();
+      const password = document.getElementById('auth-password').value;
+
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-70');
+
+      try {
+        if (isLoginMode) {
+          const user = await loginUser({ identifier, password, role: selectedRole });
+          showToast(`Đăng nhập thành công! Chào mừng ${user.fullName}`, "success");
+          setTimeout(() => {
+            if (user.role === 'doctor') {
+              window.location.href = 'doctor.html';
+            } else {
+              window.location.href = 'assessment.html';
+            }
+          }, 600);
+        } else {
+          const fullName = document.getElementById('auth-fullname').value.trim();
+          const email = selectedMethod === 'email' ? identifier : null;
+          const phone = selectedMethod === 'phone' ? identifier : null;
+
+          const user = await registerUser({ email, phone, password, fullName, role: selectedRole });
+          showToast(`Đăng ký tài khoản ${selectedRole === 'doctor' ? 'Bác sĩ' : 'Bệnh nhân'} thành công!`, "success");
+          setTimeout(() => {
+            if (user.role === 'doctor') {
+              window.location.href = 'doctor.html';
+            } else {
+              window.location.href = 'assessment.html';
+            }
+          }, 600);
+        }
+      } catch (err) {
+        errText.innerText = err.message || 'Thao tác không thành công!';
+        errBox.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-70');
+      }
+    }
+  </script>
+</body>
+</html>

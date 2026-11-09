@@ -11,7 +11,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="selection:bg-sky-500 selection:text-white">
+<body class="selection:bg-sky-500 selection:text-white min-h-screen flex flex-col">
 
   <!-- TOP HEADER & BRAND -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
@@ -30,14 +30,19 @@
           </div>
         </a>
 
-        <!-- Role Selector (Patient vs Doctor) -->
-        <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-          <a href="index.html" id="role-patient-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
-            <span>🫀 Bệnh nhân</span>
-          </a>
-          <a href="doctor.html" id="role-doctor-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-sky-700">
-            <span>👨‍⚕️ Bác sĩ</span>
-          </a>
+        <!-- Right Controls: Role Switcher & Auth Area -->
+        <div class="flex items-center gap-3">
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <a href="index.html" id="role-patient-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
+              <span>🫀 Bệnh nhân</span>
+            </a>
+            <a href="doctor.html" id="role-doctor-btn" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all shadow-sm bg-white text-sky-700">
+              <span>👨‍⚕️ Bác sĩ</span>
+            </a>
+          </div>
+
+          <!-- Auth Status / Login Button -->
+          <div id="navbar-auth-container"></div>
         </div>
       </div>
     </div>
@@ -62,74 +67,67 @@
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <section class="fade-in">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- Sidebar Inputs -->
-        <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+        
+        <!-- Sidebar Inputs: Form nhập ca khám của bác sĩ -->
+        <div class="lg:col-span-5 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
           <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
-            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
               <i class="fa-solid fa-file-waveform text-sky-600"></i> Hồ sơ bệnh án lâm sàng
             </h2>
-            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded font-semibold">Nhập dữ liệu thật</span>
+            <span id="doc-bmi-badge" class="font-semibold text-xs px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+              BMI: --
+            </span>
           </div>
 
-          <!-- Quick Presets -->
+          <!-- Họ và tên bệnh nhân (Bác sĩ nhập thật) -->
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Nạp ca lâm sàng mẫu:</label>
-            <select id="doc-preset-select" onchange="loadDoctorPreset(this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-xs bg-slate-50 font-medium">
-              <option value="default" selected>Ca tiêu chuẩn: Nguyễn Văn A (50t, HA 135/88)</option>
-              <option value="high_risk">Ca 1: Bệnh nhân nguy cơ cao (54t, HA 155/98, Chol 3)</option>
-              <option value="healthy">Ca 2: Người khỏe mạnh (32t, HA 112/74, Chol 1)</option>
-            </select>
-          </div>
-
-          <!-- Patient Name (Required for Doctor) -->
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên bệnh nhân:</label>
-            <input type="text" id="doc-patient-name" placeholder="Ví dụ: Nguyễn Văn A" value="Nguyễn Văn A" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-semibold">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Họ và tên bệnh nhân khám:</label>
+            <input type="text" id="doc-patient-name" placeholder="Nhập họ và tên bệnh nhân" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-semibold">
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Tuổi bệnh nhân:</label>
-              <input type="number" id="doc-age" value="50" min="18" max="95" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+              <input type="number" id="doc-age" min="10" max="120" placeholder="Số tuổi" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Giới tính:</label>
-              <select id="doc-gender" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white">
+              <select id="doc-gender" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm bg-white font-medium">
                 <option value="2" selected>Nam</option>
                 <option value="1">Nữ</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Chiều cao (cm):</label>
-              <input type="number" id="doc-height" value="165" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+              <input type="number" id="doc-height" min="50" max="250" placeholder="Chiều cao" oninput="calcDoctorBMI()" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Cân nặng (kg):</label>
-              <input type="number" id="doc-weight" value="72" step="0.5" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
+              <input type="number" id="doc-weight" min="20" max="300" step="0.5" placeholder="Cân nặng" oninput="calcDoctorBMI()" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium">
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">HA Tâm thu (mmHg):</label>
-              <input type="number" id="doc-ap-hi" value="135" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-sky-700">
+              <input type="number" id="doc-ap-hi" min="60" max="260" placeholder="Tối đa" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-sky-700">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">HA Tâm trương (mmHg):</label>
-              <input type="number" id="doc-ap-lo" value="88" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-sky-700">
+              <input type="number" id="doc-ap-lo" min="40" max="180" placeholder="Tối thiểu" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-sky-700">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Cholesterol:</label>
               <select id="doc-chol" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-xs bg-white font-medium">
-                <option value="1">1: Bình thường (< 5.2)</option>
-                <option value="2" selected>2: Hơi cao (5.2 - 6.2)</option>
-                <option value="3">3: Rất cao (> 6.2)</option>
+                <option value="1">1: Bình thường (&lt; 5.2)</option>
+                <option value="2">2: Hơi cao (5.2 - 6.2)</option>
+                <option value="3">3: Rất cao (&gt; 6.2)</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Glucose đói:</label>
               <select id="doc-gluc" class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-xs bg-white font-medium">
-                <option value="1" selected>1: Bình thường (< 5.6)</option>
+                <option value="1">1: Bình thường (&lt; 5.6)</option>
                 <option value="2">2: Rối loạn (5.6 - 6.9)</option>
                 <option value="3">3: Đái tháo đường (≥ 7.0)</option>
               </select>
@@ -137,14 +135,14 @@
           </div>
 
           <div class="flex gap-4 pt-2 text-xs">
-            <label class="flex items-center gap-1.5 cursor-pointer">
+            <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
               <input type="checkbox" id="doc-smoke" class="rounded text-sky-600"> Hút thuốc
             </label>
-            <label class="flex items-center gap-1.5 cursor-pointer">
+            <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
               <input type="checkbox" id="doc-alco" class="rounded text-sky-600"> Rượu bia
             </label>
-            <label class="flex items-center gap-1.5 cursor-pointer">
-              <input type="checkbox" id="doc-active" checked class="rounded text-sky-600"> Vận động
+            <label class="flex items-center gap-1.5 cursor-pointer font-medium text-slate-700">
+              <input type="checkbox" id="doc-active" class="rounded text-sky-600"> Vận động
             </label>
           </div>
 
@@ -158,25 +156,61 @@
           </div>
         </div>
 
-        <!-- Doctor XAI Analytics Output -->
+        <!-- Main XAI Analysis Content View -->
         <div class="lg:col-span-7 space-y-6">
-          <!-- 4 Quick Metric Cards -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="doc-metrics-row"></div>
-
-          <!-- XAI Factor Contributions -->
-          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-            <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-              <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                <i class="fa-solid fa-brain text-purple-600"></i> Phân tích đóng góp yếu tố (Explainable AI - XAI)
-              </h3>
-              <span class="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full font-semibold">Cận biên SHAP</span>
+          <!-- 4 Mini Metric Cards -->
+          <div id="doc-metrics-row" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+              <span class="text-[11px] font-bold text-slate-400">Xác suất tim mạch</span>
+              <div class="text-2xl font-extrabold mt-1 text-slate-300">--%</div>
+              <span class="text-[11px] text-slate-400">Gradient Boost</span>
             </div>
-            <div id="doc-xai-factors-container" class="space-y-3"></div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+              <span class="text-[11px] font-bold text-slate-400">Phân tầng rủi ro</span>
+              <div class="text-base font-extrabold mt-1 text-slate-300">Chờ phân tích</div>
+              <span class="text-[11px] text-slate-400">Chuẩn ESC/ACC</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+              <span class="text-[11px] font-bold text-slate-400">Chỉ số BMI</span>
+              <div class="text-2xl font-extrabold text-slate-300 mt-1">--</div>
+              <span class="text-[11px] text-slate-400">kg/m²</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+              <span class="text-[11px] font-bold text-slate-400">Huyết áp khám</span>
+              <div class="text-2xl font-extrabold text-slate-300 mt-1">--/--</div>
+              <span class="text-[11px] text-slate-400">mmHg</span>
+            </div>
           </div>
 
-          <!-- Recommendation Protocol -->
-          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm" id="doc-protocol-container"></div>
+          <!-- XAI SHAP Explanation Box -->
+          <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div>
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <i class="fa-solid fa-brain text-sky-600"></i> Giải thích AI minh bạch (SHAP Factor Attribution)
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Mức độ đóng góp của từng chỉ số y sinh vào kết quả chẩn đoán</p>
+              </div>
+              <span class="px-2.5 py-1 rounded bg-sky-50 text-sky-700 text-xs font-bold border border-sky-100">TreeExplainer</span>
+            </div>
+            <div id="doc-xai-factors-container" class="space-y-3">
+              <p class="text-sm text-slate-400 py-6 text-center">
+                Nhập thông tin bệnh nhân và bấm <b>"Phân tích XAI"</b> để trực quan hóa mức độ tác động của từng chỉ số.
+              </p>
+            </div>
+          </div>
+
+          <!-- Protocol & Clinical Recommendation Box -->
+          <div id="doc-protocol-container" class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2 mb-2">
+              <i class="fa-solid fa-clipboard-check text-sky-600"></i> Khuyến nghị & phác đồ lâm sàng đề xuất
+            </h3>
+            <p class="text-sm text-slate-500 leading-relaxed">
+              Dựa trên phân tầng nguy cơ và các chỉ số trọng yếu, hệ thống sẽ đề xuất phác đồ cận lâm sàng (ECG, Doppler, Bilan Lipid) phù hợp với chuẩn VNHA/ESC.
+            </p>
+          </div>
         </div>
+
       </div>
     </section>
   </main>
@@ -202,6 +236,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="js/firebase-config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/data.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/cardio-ai.js"></script>
   <script src="js/toast.js"></script>
@@ -209,8 +245,7 @@
   <script src="js/doctor.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // Initialize preview SILENTLY without any toast notification on page load
-      executeDoctorXAI(false);
+      calcDoctorBMI();
     });
   </script>
 </body>
