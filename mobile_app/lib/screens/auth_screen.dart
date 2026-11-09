@@ -448,14 +448,14 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 14),
                   ],
 
-                  // FORM FIELDS: HOÀN TOÀN TRỐNG KÈM DÒNG CHỮ HƯỚNG DẪN MỜ
+                  // FORM FIELDS: HOÀN TOÀN TRỐNG KÈM DÒNG CHỮ HƯỚNG DẪN MỜ (KHÔNG VÍ DỤ)
                   if (!_isLogin) ...[
                     TextFormField(
                       controller: _fullNameController,
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: isPatient ? 'Họ và tên của bạn' : 'Họ và tên bác sĩ',
-                        hintText: isPatient ? 'Nhập họ và tên đầy đủ' : 'Ví dụ: Bác sĩ Nguyễn Văn A',
+                        hintText: isPatient ? 'Nhập họ và tên đầy đủ' : 'Nhập họ và tên bác sĩ',
                         hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                         prefixIcon: const Icon(Icons.person_outline),
                         filled: true,
@@ -477,8 +477,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     decoration: InputDecoration(
                       labelText: isEmail ? 'Địa chỉ email' : 'Số điện thoại',
                       hintText: isEmail
-                          ? 'Nhập địa chỉ email (VD: vidu@gmail.com)'
-                          : 'Nhập số điện thoại (VD: 0912345678)',
+                          ? 'Nhập địa chỉ email'
+                          : 'Nhập số điện thoại',
                       hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                       prefixIcon: Icon(isEmail ? Icons.email_outlined : Icons.phone_android_outlined),
                       filled: true,
@@ -493,12 +493,12 @@ class _AuthScreenState extends State<AuthScreen> {
                       final clean = v.trim();
                       if (isEmail) {
                         if (!clean.contains('@') || !clean.contains('.')) {
-                          return 'Email không hợp lệ (Ví dụ: ten@domain.com)';
+                          return 'Địa chỉ email không hợp lệ';
                         }
                       } else {
                         final phoneClean = clean.replaceAll(' ', '');
                         if (phoneClean.length < 10 || !phoneClean.startsWith('0')) {
-                          return 'Số điện thoại không hợp lệ (10 chữ số, bắt đầu bằng 0)';
+                          return 'Số điện thoại không hợp lệ (10 chữ số)';
                         }
                       }
                       return null;
@@ -515,7 +515,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     onFieldSubmitted: (_) => _submit(),
                     decoration: InputDecoration(
                       labelText: 'Mật khẩu',
-                      hintText: 'Nhập mật khẩu của bạn (tối thiểu 6 ký tự)',
+                      hintText: 'Nhập mật khẩu',
                       hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
