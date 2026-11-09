@@ -31,7 +31,7 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   bool _smoke = false;
   bool _alco = false;
   bool _active = true;
-  String _doctorPatientName = "Trần Văn Cao";
+  String _doctorPatientName = "";
 
   bool _isLoading = false;
   FullAnalysisResult? _analysisResult;
@@ -76,6 +76,10 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
   }
 
   Future<void> _submitAnalysis() async {
+    if (_formKey.currentState != null && !_formKey.currentState!.validate()) {
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -269,12 +273,19 @@ class _AssessmentScreenState extends State<AssessmentScreen> {
                           initialValue: _doctorPatientName,
                           decoration: InputDecoration(
                             labelText: 'Họ và tên bệnh nhân khám',
+                            hintText: 'Nhập họ và tên bệnh nhân...',
                             prefixIcon: const Icon(Icons.person, size: 20),
                             filled: true,
                             fillColor: const Color(0xFFF8FAFC),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                           ),
                           onChanged: (val) => _doctorPatientName = val,
+                          validator: (val) {
+                            if (_isDoctor && (val == null || val.trim().isEmpty)) {
+                              return 'Vui lòng nhập họ và tên bệnh nhân';
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 14),
                       ],

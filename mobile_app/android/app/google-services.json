@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "506715356518",
+    "project_id": "healthcare-xai",
+    "storage_bucket": "healthcare-xai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:506715356518:android:f7aa0dc938986ad03edca7",
+        "android_client_info": {
+          "package_name": "com.cardioxai.clinical.mobile_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJSZuRznJswGiXhM_epGWf8-r7JgYnHL8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

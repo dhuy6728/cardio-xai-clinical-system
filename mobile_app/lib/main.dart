@@ -4,8 +4,11 @@ import 'screens/home_screen.dart';
 import 'screens/assessment_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
+import 'services/firebase_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await FirebaseService.initialize();
   runApp(const CardioCareApp());
 }
 

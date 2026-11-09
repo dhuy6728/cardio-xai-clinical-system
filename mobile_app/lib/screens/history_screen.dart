@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/firebase_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   final String apiHost;
@@ -34,6 +35,40 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
   }
 
+  Future<void> _deleteRecord(dynamic id) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận xóa', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Bạn có chắc chắn muốn xóa hồ sơ này khỏi kho lưu trữ? Dữ liệu trên Firebase sẽ được đồng bộ ngay lập tức.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xóa', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await FirebaseService.deleteAssessmentRecord(id.toString());
+      _loadHistory();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã xóa hồ sơ khỏi kho lưu trữ thành công!'),
+            backgroundColor: Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +86,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
             ),
             Text(
-              _isDoctor ? 'Danh sách bệnh nhân & hồ sơ lâm sàng' : 'Lịch sử ngày khám & tình trạng nguy cơ',
+              _isDoctor ? 'Danh sách bệnh nhân & hồ sơ lâm sàng (Firebase Sync)' : 'Lịch sử ngày khám & tình trạng nguy cơ (Firebase Sync)',
               style: const TextStyle(fontSize: 11, color: Colors.white70),
             ),
           ],
@@ -117,123 +152,133 @@ class _HistoryScreenState extends State<HistoryScreen> {
           }
 
           final records = snapshot.data!;
-          return ListView.builder(
-            padding: const EdgeInsets.all(14),
-            itemCount: records.length,
-            itemBuilder: (context, index) {
-              final r = records[index];
-              final riskProb = (r['risk_probability'] as num).toDouble();
-              final isHigh = riskProb >= 0.65;
-              final isMod = riskProb >= 0.35 && riskProb < 0.65;
+          return RefreshIndicator(
+            onRefresh: () async => _loadHistory(),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(14),
+              itemCount: records.length,
+              itemBuilder: (context, index) {
+                final r = records[index];
+                final riskProb = (r['risk_probability'] as num).toDouble();
+                final isHigh = riskProb >= 0.65;
+                final isMod = riskProb >= 0.35 && riskProb < 0.65;
 
-              final badgeColor = isHigh ? Colors.red : (isMod ? Colors.orange : Colors.green);
-              final statusText = isHigh ? "Nguy cơ cao" : (isMod ? "Nguy cơ trung bình" : "Nguy cơ thấp (An toàn)");
+                final badgeColor = isHigh ? Colors.red : (isMod ? Colors.orange : Colors.green);
+                final statusText = isHigh ? "Nguy cơ cao" : (isMod ? "Nguy cơ trung bình" : "Nguy cơ thấp (An toàn)");
 
-              // Formatted date string
-              final dateStr = r['created_at'] != null
-                  ? r['created_at'].toString().replaceFirst('T', ' ').split('.').first
-                  : 'Gần đây';
+                final dateStr = r['created_at'] != null
+                    ? r['created_at'].toString().replaceFirst('T', ' ').split('.').first
+                    : 'Gần đây';
 
-              return Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  side: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-                margin: const EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header: Bác sĩ hiển thị tên bệnh nhân, Bệnh nhân hiển thị ngày tháng
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _isDoctor ? Icons.person : Icons.calendar_today,
-                                  size: 16,
-                                  color: themeColor,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _isDoctor
-                                        ? '${r['patient_name'] ?? 'Bệnh nhân'} (#${r['id']})'
-                                        : 'Ngày khám: $dateStr',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Color(0xFF0F172A),
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                return Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _isDoctor ? Icons.person : Icons.calendar_today,
+                                    size: 16,
+                                    color: themeColor,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: badgeColor.shade100,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '$statusText (${(riskProb * 100).toStringAsFixed(1)}%)',
-                              style: TextStyle(
-                                color: badgeColor.shade900,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _isDoctor
+                                          ? '${r['patient_name'] ?? 'Bệnh nhân'} (#${r['id']})'
+                                          : 'Ngày khám: $dateStr',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-
-                      if (_isDoctor) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Thời gian khám: $dateStr',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                        ),
-                      ],
-
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFF1F5F9)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildMiniMetric('Huyết áp', '${r['ap_hi']}/${r['ap_lo']} mmHg'),
-                            _buildMiniMetric('BMI', '${r['bmi'] ?? '--'} kg/m²'),
-                            _buildMiniMetric('Tuổi', '${r['age']} tuổi'),
-                            _buildMiniMetric('Cholesterol', 'Mức ${r['cholesterol']}'),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: badgeColor.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '$statusText (${(riskProb * 100).toStringAsFixed(1)}%)',
+                                style: TextStyle(
+                                  color: badgeColor.shade900,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.grey),
+                              tooltip: 'Xóa hồ sơ',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () => _deleteRecord(r['id']),
+                            ),
                           ],
                         ),
-                      ),
 
-                      if (r['recommendation'] != null && r['recommendation'].toString().isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          '💡 ${r['recommendation']}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.35),
+                        if (_isDoctor) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Thời gian khám: $dateStr',
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                          ),
+                        ],
+
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFF1F5F9)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _buildMiniMetric('Huyết áp', '${r['ap_hi']}/${r['ap_lo']} mmHg'),
+                              _buildMiniMetric('BMI', '${r['bmi'] ?? '--'} kg/m²'),
+                              _buildMiniMetric('Tuổi', '${r['age']} tuổi'),
+                              _buildMiniMetric('Cholesterol', 'Mức ${r['cholesterol']}'),
+                            ],
+                          ),
                         ),
+
+                        if (r['recommendation'] != null && r['recommendation'].toString().isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            '💡 ${r['recommendation']}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.35),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           );
         },
       ),
