@@ -1,15 +1,16 @@
 /**
  * CardioCare AI - Firebase Configuration & Initialization
- * Điền các thông số từ Firebase Console vào đối tượng firebaseConfig bên dưới.
+ * Project: healthcare-xai
  */
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCVtfCHB27aszRGQvvMf13JAXq4EZL9CX0",
+  authDomain: "healthcare-xai.firebaseapp.com",
+  projectId: "healthcare-xai",
+  storageBucket: "healthcare-xai.firebasestorage.app",
+  messagingSenderId: "506715356518",
+  appId: "1:506715356518:web:20f72d91be3f66583edca7",
+  measurementId: "G-E5PEK4MJMR"
 };
 
 let db = null;
@@ -24,7 +25,7 @@ function isFirebaseConfigured() {
   );
 }
 
-// Khởi tạo Firebase nếu đã điền config
+// Khởi tạo Firebase
 if (typeof firebase !== 'undefined' && isFirebaseConfigured()) {
   try {
     if (!firebase.apps.length) {
@@ -32,8 +33,8 @@ if (typeof firebase !== 'undefined' && isFirebaseConfigured()) {
     }
     db = firebase.firestore();
     auth = firebase.auth();
-    console.log("Firebase Cloud Firestore đã được kết nối thành công!");
+    console.log("Firebase Cloud Firestore (healthcare-xai) đã kết nối thành công!");
   } catch (e) {
-    console.warn("Chưa thể khởi tạo Firebase:", e);
+    console.warn("Chưa thể kết nối Firebase:", e);
   }
 }
