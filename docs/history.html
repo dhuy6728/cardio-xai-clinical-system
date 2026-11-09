@@ -105,6 +105,10 @@
   </footer>
 
   <!-- Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/toast.js"></script>
   <script src="js/navbar.js"></script>
@@ -112,6 +116,9 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       renderPatientHistory();
+      if (typeof initRealtimeFirestoreSync === 'function') {
+        initRealtimeFirestoreSync(() => renderPatientHistory());
+      }
     });
   </script>
 </body>
